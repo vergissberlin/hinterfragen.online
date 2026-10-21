@@ -38,3 +38,10 @@ INSERT INTO system_flags(name,enabled) VALUES ('attack_mode',false) ON CONFLICT 
 INSERT INTO system_flags(name,enabled) VALUES ('publication_paused',true) ON CONFLICT DO NOTHING;
 CREATE INDEX IF NOT EXISTS candidates_status ON candidates(status);
 CREATE INDEX IF NOT EXISTS analysis_runs_created ON analysis_runs(created_at);
+
+ALTER TABLE candidates DROP CONSTRAINT IF EXISTS candidates_video_id_key;
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS source_key text;
+UPDATE candidates SET source_key='video:' || video_id WHERE source_key IS NULL;
+ALTER TABLE candidates ALTER COLUMN source_key SET NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS candidates_source_key ON candidates(source_key);
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS source_author jsonb;

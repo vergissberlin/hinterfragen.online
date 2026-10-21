@@ -2,6 +2,7 @@ import { mkdir, rename, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Db } from './db.ts';
 import type { Config } from './config.ts';
+import { cacheAvatar } from './avatars.ts';
 import { catalogSchema, publicPostSchema } from '../src/lib/contracts.ts';
 export async function atomicJson(directory: string, filename: string, data: unknown) {
   await mkdir(directory, { recursive: true });
@@ -37,24 +38,38 @@ export async function exportCatalog(pool: Db, config: Config, now = Date.now()) 
     const result = await db.query(
       "SELECT * FROM candidates WHERE status='published' AND checked_at IS NOT NULL",
     );
-    const posts = result.rows
-      .filter((r) => r.body && r.analysis && new Date(r.checked_at).getTime() + 7200000 > now)
-      .map((r) =>
-        publicPostSchema.parse({
-          id: r.id,
-          videoId: r.video_id,
-          title: r.title,
-          channel: r.channel,
-          channelId: r.channel_id,
-          topic: r.analysis.topic,
-          summary: r.analysis.summary,
-          evidence: r.body.evidence,
-          questions: r.analysis.questions,
-          checkedAt: new Date(r.checked_at).toISOString(),
-          expiresAt: new Date(new Date(r.checked_at).getTime() + 7200000).toISOString(),
-          demo: false,
-        }),
-      );
+    const posts = [];
+    for (const r of result.rows) {
+      if (!r.body || !r.analysis || new Date(r.checked_at).getTime() + 7200000 <= now) continue;
+      const author = r.source_author ?? { name: r.channel, channelId: r.channel_id };
+      const avatarUrl = await cacheAvatar(author.avatarSourceUrl, config.DATA_DIR, now);
+      const parsed = publicPostSchema.safeParse({
+        id: r.id,
+        videoId: r.video_id,
+        title: r.title,
+        channel: r.channel,
+        channelId: r.channel_id,
+        target:
+          r.body.target?.type === 'comment'
+            ? { type: 'comment', commentId: r.body.target.commentId }
+            : { type: 'video' },
+        author: {
+          name: author.name,
+          ...(avatarUrl ? { avatarUrl } : {}),
+          ...(author.channelId
+            ? { profileUrl: 'https://www.youtube.com/channel/' + author.channelId }
+            : {}),
+        },
+        topic: r.analysis.topic,
+        summary: r.analysis.summary,
+        evidence: r.body.evidence,
+        questions: r.analysis.questions,
+        checkedAt: new Date(r.checked_at).toISOString(),
+        expiresAt: new Date(new Date(r.checked_at).getTime() + 7200000).toISOString(),
+        demo: false,
+      });
+      if (parsed.success) posts.push(parsed.data);
+    }
     await atomicJson(
       config.DATA_DIR,
       'catalog.json',

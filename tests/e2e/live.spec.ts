@@ -12,7 +12,12 @@ const post = {
 async function mockPost(page: Page) {
   await page.route('**/api/commenting-status?*', (route) =>
     route.fulfill({
-      json: { enabled: true, videoId: post.videoId, evidenceQuote: post.evidence.quote },
+      json: {
+        enabled: true,
+        videoId: post.videoId,
+        evidenceQuote: post.evidence.quote,
+        targetKey: 'video:' + post.videoId,
+      },
     }),
   );
   await page.route('**/data/catalog.json', (route) =>
@@ -175,4 +180,103 @@ test('Backendausfall verhindert direkten YouTube-Versand', async ({ page }) => {
   await page.locator('#publish-approve').click();
   await expect(page.locator('#publish-state')).toContainText('Es wurde nichts gesendet');
   expect(attempts).toBe(0);
+});
+
+test('Beitrag ist vor der Frageauswahl über Titel und Original-Link erreichbar', async ({
+  page,
+}) => {
+  await mockPost(page);
+  await page.goto('/');
+  await expect(page.locator('#post-content')).toBeVisible();
+  await expect(page.locator('#question-panel')).toBeHidden();
+  for (const id of ['post-title-link', 'post-original']) {
+    await expect(page.locator('#' + id)).toHaveAttribute(
+      'href',
+      'https://www.youtube.com/watch?v=abcdefghijk&t=42s',
+    );
+    await expect(page.locator('#' + id)).toHaveAttribute('target', '_blank');
+  }
+});
+
+test('zeigt Kommentarautor und verlinkt sowie beantwortet genau den ausgewählten Kommentar', async ({
+  page,
+}) => {
+  await mockPost(page);
+  const reply = {
+    ...post,
+    target: { type: 'comment', commentId: 'comment-12345' },
+    author: {
+      name: 'Kommentarautorin',
+      avatarUrl: '/avatars/demo-person.svg',
+      profileUrl: 'https://www.youtube.com/channel/UC' + 'z'.repeat(22),
+    },
+  };
+  await page.route('**/data/catalog.json', (route) =>
+    route.fulfill({
+      json: { version: 1, generatedAt: new Date().toISOString(), demo: false, posts: [reply] },
+    }),
+  );
+  await page.route('**/api/commenting-status?*', (route) =>
+    route.fulfill({
+      json: {
+        enabled: true,
+        videoId: post.videoId,
+        evidenceQuote: post.evidence.quote,
+        targetKey: 'comment:comment-12345',
+      },
+    }),
+  );
+  await page.route('**/data/runtime.json', (route) =>
+    route.fulfill({
+      json: { commentingEnabled: true, expiresAt: new Date(Date.now() + 60000).toISOString() },
+    }),
+  );
+  const sent: unknown[] = [];
+  await page.route('https://www.googleapis.com/youtube/v3/comments?*', (route) => {
+    sent.push(route.request().postDataJSON());
+    return route.fulfill({ json: { id: 'test-reply' } });
+  });
+  await connect(page);
+  await expect(page.locator('#post-author-label')).toHaveText('Kommentar von');
+  await expect(page.locator('#post-author-name')).toHaveText('Kommentarautorin');
+  await expect(page.locator('#post-author-avatar')).toHaveAttribute(
+    'src',
+    '/avatars/demo-person.svg',
+  );
+  await expect(page.locator('#post-original')).toHaveAttribute(
+    'href',
+    'https://www.youtube.com/watch?v=abcdefghijk&lc=comment-12345',
+  );
+  await expect(page.locator('#publish-target')).toContainText(
+    'Antwort auf einen Kommentar von Kommentarautorin',
+  );
+  await page.locator('#publish-approve').click();
+  await expect(page.locator('#publish-state')).toContainText('angenommen');
+  expect(sent).toEqual([
+    { snippet: { parentId: 'comment-12345', textOriginal: 'Welche Belege gibt es dafür?' } },
+  ]);
+});
+test('Avatar-Ausfall behält den Namen und zeigt ein lokales Ersatzbild', async ({ page }) => {
+  await mockPost(page);
+  const withMissingAvatar = {
+    ...post,
+    author: { name: 'Kanalname', avatarUrl: '/data/avatars/' + 'a'.repeat(32) + '.jpg' },
+  };
+  await page.route('**/data/catalog.json', (route) =>
+    route.fulfill({
+      json: {
+        version: 1,
+        generatedAt: new Date().toISOString(),
+        demo: false,
+        posts: [withMissingAvatar],
+      },
+    }),
+  );
+  await page.route('**/data/avatars/*', (route) => route.fulfill({ status: 404 }));
+  await page.goto('/');
+  await expect(page.locator('#post-author-name')).toHaveText('Kanalname');
+  await expect(page.locator('#post-author-avatar')).toHaveAttribute(
+    'src',
+    '/avatars/placeholder.svg',
+  );
 });

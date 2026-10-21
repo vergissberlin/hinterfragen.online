@@ -350,3 +350,58 @@ describe('Aktuelle Kommentierfreigabe', () => {
     expect((await app.inject(url)).json()).toEqual({ enabled: false });
   });
 });
+
+describe('Mehrere Ziele am selben Video', () => {
+  it('speichert Beitrag und Kommentar getrennt und veröffentlicht den tatsächlichen Kommentarautor', async () => {
+    await save(true);
+    const quote = 'Diese Aussage steht nur im Kommentar.';
+    const replyCandidate = {
+      ...candidate,
+      target: { type: 'comment' as const, commentId: 'comment-12345' },
+      evidence: { ...candidate.evidence, quote },
+    };
+    const replyAnalysis = { ...analysis, evidenceQuote: quote };
+    const scoped = await buildApp(db, config, async () => ({
+      ...(await check()),
+      target: {
+        type: 'comment',
+        commentId: 'comment-12345',
+        text: quote,
+        author: { name: 'Kommentarautor', channelId: 'UC' + 'z'.repeat(22) },
+      },
+      author: { name: 'Kommentarautor', channelId: 'UC' + 'z'.repeat(22) },
+    }));
+    try {
+      const saved = await scoped.inject({
+        method: 'POST',
+        url: '/internal/editorial',
+        headers: admin,
+        payload: { candidate: replyCandidate, analysis: replyAnalysis },
+      });
+      expect(saved.statusCode).toBe(200);
+      expect(saved.json().saved).toBe(true);
+      const rows = (await db.query('SELECT * FROM candidates')).rows;
+      expect(rows).toHaveLength(2);
+      const reply = rows.find((r) => r.source_key === 'comment:comment-12345');
+      expect(reply.source_author.name).toBe('Kommentarautor');
+      await db.query("UPDATE system_flags SET enabled=false WHERE name='publication_paused'");
+      const published = await scoped.inject({
+        method: 'POST',
+        url: '/internal/publish',
+        headers: admin,
+        payload: { id: reply.id },
+      });
+      expect(published.json().published).toBe(true);
+      const catalog = JSON.parse(await readFile(resolve(dir, 'catalog.json'), 'utf8'));
+      expect(catalog.posts[0]).toMatchObject({
+        target: { type: 'comment', commentId: 'comment-12345' },
+        author: { name: 'Kommentarautor' },
+      });
+      expect(catalog.posts[0].target.text).toBeUndefined();
+      const live = (await scoped.inject('/api/commenting-status?postId=' + reply.id)).json();
+      expect(live.targetKey).toBe('comment:comment-12345');
+    } finally {
+      await scoped.close();
+    }
+  });
+});

@@ -55,3 +55,15 @@ Die exakten Zod-Verträge stehen in `src/lib/contracts.ts`. Agententokens dürfe
 ## Phase 2
 
 `ProfilePreferences` reserviert Themen und `questionTone` (`factual`, `provocative`, `snarky`, `emotional`, `aggressive`). Standard `factual`; fehlende geprüfte Varianten haben einen expliziten sachlichen Ersatz. Keine Oberfläche, Nutzerkonten, Synchronisierung, nicht-sachliche Generierung oder Rangliste in V1. Die optionale YouTube-Autorisierung ist keine Portal-Identität.
+
+## Beitrags- und Kommentarziele
+
+Ein Kandidat kann `target: {type: "video"}` (auch der Standard für ältere Datensätze) oder `target: {type: "comment", commentId: "..."}` enthalten. Die Redaktion kann den direkten YouTube-Link mit `v` und `lc` im Editor übernehmen. Unterstützt werden Hauptkommentare; verschachtelte Antworten sind als Ziel nicht freigegeben. YouTube selbst hängt Antworten an den Hauptkommentar.
+
+Das Backend prüft die Videozuordnung und liest Kommentartext, Verfassername und Avatar aus der API. Diese Angaben werden nicht vom Agenten erfunden. Der wörtliche Beleg wird bei Kommentarzielen gegen den ausgewählten Kommentar geprüft, beim Video gegen das Transkript. Bearbeitete oder gelöschte Kommentare werden nicht mit einer alten Analyse weiterveröffentlicht. Der öffentliche Akteursstatus gilt für den tatsächlichen Kommentarautor, nicht automatisch für den Videokanal.
+
+Die Migration ersetzt die eindeutige Video-ID durch `source_key` (`video:ID` bzw. `comment:ID`), sodass mehrere geprüfte Ziele am selben Video bestehen können. Bestehende Kandidaten bleiben Videoziele. Verifizierte Autordaten stehen in `source_author`. Der öffentliche Katalog liefert nur das nötige Ziel, Anzeigename, Profil-Link und lokale Avatar-URL; keine komplette Kommentarstichprobe oder Roh-Avatar-URL.
+
+Profilbilder werden nur von fest erlaubten YouTube-Bildhosts ohne Weiterleitungen geholt, auf 128 KiB und Rasterformate begrenzt und lokal gecacht. Ein fehlendes Bild hat einen sichtbaren lokalen Ersatz. Name und Original-Link bleiben erhalten. Der Cache wird täglich erneuert und nach spätestens 30 Tagen bereinigt.
+
+Fragevorschläge verwenden einfache Alltagssprache, genau eine Frage, höchstens 16 Wörter und 180 Zeichen. Eigene Änderungen im Textfeld bleiben möglich. Der geänderte Prompt und Datenvertrag benötigen vor erneuter automatischer Freigabe eine neue Kalibrierung.

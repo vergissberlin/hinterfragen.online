@@ -20,7 +20,7 @@ Die Same-Origin-Grenze verhindert Zugriff auf das DOM von youtube.com. YouTube b
 Es gibt zwei Wege:
 
 1. Frage vorbereiten und kopieren, Original öffnen. Ein ausdrücklich vom Nutzer beauftragter Browser-Agent kann anschließend auf YouTube arbeiten, abhängig von Browser, Konto und dessen eigenen Freigaben.
-2. Einmalige Veröffentlichung über `commentThreads.insert` nach YouTube-OAuth und sichtbarer Freigabe auf unserer Seite. Das ist ein API-Kommentar; das YouTube-Kommentarfeld wird dabei nicht befüllt.
+2. Einmalige Veröffentlichung über `commentThreads.insert` für Beiträge oder `comments.insert` mit `parentId` für Antworten auf ausgewählte Hauptkommentare nach YouTube-OAuth und sichtbarer Freigabe auf unserer Seite. Das ist ein API-Kommentar; das YouTube-Kommentarfeld wird dabei nicht befüllt.
 
 ## Optionale API-Verbindung einrichten
 

@@ -3,6 +3,7 @@ import { calibrationPasses, publicationIssues } from '../server/policy.ts';
 import { candidate, analysis, model, prompt, testCalibration } from './fixtures.ts';
 import {
   analysisSchema,
+  questionSchema,
   profilePreferencesSchema,
   resolveTone,
   selectPost,
@@ -92,5 +93,35 @@ describe('Browserauswahl und spätere Profile', () => {
         questions: ['Sachliche Frage?'],
         fallback: true,
       });
+  });
+});
+
+describe('Kurze Fragen in einfacher Sprache', () => {
+  it('begrenzt vorgeschlagene Fragen auf einen kurzen Gedanken', () => {
+    expect(questionSchema.safeParse('Woher weißt du das?').success).toBe(true);
+    expect(questionSchema.safeParse('Warum? Und wieso?').success).toBe(false);
+    expect(questionSchema.safeParse(Array(17).fill('Wort').join(' ') + '?').success).toBe(false);
+    for (const post of demoCatalog.posts)
+      for (const question of post.questions)
+        expect(questionSchema.safeParse(question).success).toBe(true);
+  });
+});
+
+describe('Beleg eines ausgewählten Kommentars', () => {
+  it('prüft den Beleg gegen den Kommentar und nicht gegen das Video', () => {
+    const target = {
+      type: 'comment' as const,
+      commentId: 'comment-12345',
+      text: 'Wahlen sind grundsätzlich nutzlos.',
+    };
+    expect(
+      publicationIssues({ ...candidate, transcript: 'Video ohne diese Aussage', target }, analysis),
+    ).toEqual([]);
+    expect(
+      publicationIssues(
+        { ...candidate, target: { ...target, text: 'Dieser Kommentar sagt etwas anderes.' } },
+        analysis,
+      ),
+    ).not.toEqual([]);
   });
 });

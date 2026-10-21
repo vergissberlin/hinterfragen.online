@@ -84,7 +84,35 @@ const demo = import.meta.env.PUBLIC_DEMO_MODE === 'true';
               <span id="post-topic" class="topic-badge"></span>
               <span id="post-source" class="source-label"></span>
             </div>
-            <h2 id="post-title"></h2>
+            <div class="source-author">
+              <img
+                id="post-author-avatar"
+                src="/avatars/placeholder.svg"
+                width="44"
+                height="44"
+                alt=""
+                referrerpolicy="no-referrer"
+              />
+              <div>
+                <p id="post-author-label"></p>
+                <a id="post-author-name" target="_blank" rel="noopener noreferrer"></a>
+              </div>
+            </div>
+            <h2 id="post-title">
+              <a id="post-title-link" target="_blank" rel="noopener noreferrer"></a>
+            </h2>
+            <a
+              id="post-original"
+              class="post-original"
+              target="_blank"
+              rel="noopener noreferrer"
+              hidden
+            >
+              Originalbeitrag auf YouTube ansehen ↗
+            </a>
+            <p id="post-demo-source" class="demo-source" hidden>
+              Erfundenes Beispiel · Es gibt keinen Originalbeitrag.
+            </p>
             <p id="post-summary" class="post-summary"></p>
             <blockquote>
               <span class="quote-mark" aria-hidden="true">

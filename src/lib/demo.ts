@@ -10,6 +10,8 @@ export const demoCatalog: Catalog = {
       videoId: '',
       title: 'Wenn eine einfache Antwort zu einfach ist.',
       channel: 'Erfundenes Beispiel',
+      author: { name: 'Beispiel-Kanal', avatarUrl: '/avatars/demo-channel.svg' },
+      target: { type: 'video' },
       topic: 'democracy',
       summary:
         'Ein fiktiver Beitrag behauptet, demokratische Abstimmungen seien grundsätzlich nutzlos. Eine gute Frage macht sichtbar, was diese Behauptung auslässt.',
@@ -20,9 +22,9 @@ export const demoCatalog: Catalog = {
           'Dieses Beispiel ist frei erfunden. Es zeigt, wie sich eine pauschale Behauptung hinterfragen lässt.',
       },
       questions: [
-        'Woran würdest du erkennen, dass eine Wahl etwas verändert hat?',
-        'Welche konkreten Entscheidungen meinst du damit?',
-        'Wie könnten Menschen deiner Ansicht nach sonst über gemeinsame Regeln entscheiden?',
+        'Was hat die letzte Wahl verändert?',
+        'Welche Entscheidungen meinst du?',
+        'Wie sollen Menschen sonst gemeinsam entscheiden?',
       ],
       checkedAt: '2026-10-21T00:00:00.000Z',
       expiresAt: '2099-01-01T00:00:00.000Z',
@@ -33,9 +35,15 @@ export const demoCatalog: Catalog = {
       videoId: '',
       title: 'Eine Behauptung. Viele offene Fragen.',
       channel: 'Erfundenes Beispiel',
+      author: { name: 'Beispiel-Person', avatarUrl: '/avatars/demo-person.svg' },
+      target: {
+        type: 'comment',
+        commentId: 'demo-comment',
+        text: 'Frauen sind für Führungsaufgaben nicht geeignet.',
+      },
       topic: 'women',
       summary:
-        'Ein erfundener Beitrag spricht Frauen pauschal Führungsqualitäten ab. Die Fragen lenken das Gespräch auf Kriterien und überprüfbare Erfahrungen.',
+        'Ein erfundener Kommentar spricht Frauen pauschal Führungsqualitäten ab. Die Fragen lenken das Gespräch auf Kriterien und überprüfbare Erfahrungen.',
       evidence: {
         quote: 'Frauen sind für Führungsaufgaben nicht geeignet.',
         startSeconds: 18,
@@ -43,9 +51,9 @@ export const demoCatalog: Catalog = {
           'Frei erfundene Aussage zur Demonstration. Keine Zuordnung zu einer realen Person.',
       },
       questions: [
-        'An welchen konkreten Fähigkeiten würdest du gute Führung festmachen?',
-        'Welche Belege würden deine Einschätzung verändern?',
-        'Würdest du dieselben Maßstäbe bei jedem Menschen anlegen?',
+        'Woran erkennst du gute Führung?',
+        'Was könnte deine Meinung ändern?',
+        'Gilt das für jeden Menschen?',
       ],
       checkedAt: '2026-10-21T00:00:00.000Z',
       expiresAt: '2099-01-01T00:00:00.000Z',
@@ -56,6 +64,8 @@ export const demoCatalog: Catalog = {
       videoId: '',
       title: 'Nachfragen, wo Menschen pauschal werden.',
       channel: 'Erfundenes Beispiel',
+      author: { name: 'Beispiel-Kanal', avatarUrl: '/avatars/demo-channel.svg' },
+      target: { type: 'video' },
       topic: 'minorities',
       summary:
         'Ein erfundener Beitrag macht eine ganze Gruppe für gesellschaftliche Probleme verantwortlich. Die Fragen holen das Gespräch zurück zu konkreten Aussagen.',
@@ -65,9 +75,9 @@ export const demoCatalog: Catalog = {
         context: 'Frei erfundenes Beispiel. Es wird keine reale Gruppe oder Person adressiert.',
       },
       questions: [
-        'Welches konkrete Problem meinst du und wie entsteht es?',
-        'Wie unterscheidest du zwischen einzelnen Handlungen und einer ganzen Gruppe?',
-        'Welche anderen Ursachen hast du dabei berücksichtigt?',
+        'Welches Problem meinst du genau?',
+        'Kannst du das über jeden Menschen dieser Gruppe sagen?',
+        'Welche anderen Gründe könnte es geben?',
       ],
       checkedAt: '2026-10-21T00:00:00.000Z',
       expiresAt: '2099-01-01T00:00:00.000Z',

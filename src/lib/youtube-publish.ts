@@ -1,4 +1,4 @@
-import type { PublicPost } from './contracts.ts';
+import { originalUrl, sourceKey, type PublicPost } from './contracts.ts';
 export const youtubeScope = 'https://www.googleapis.com/auth/youtube.force-ssl';
 type TokenResponse = { access_token?: string; expires_in?: number; error?: string; scope?: string };
 type Identity = {
@@ -24,6 +24,8 @@ export function commentBody(post: PublicPost, text: string) {
   )
     throw new Error('missing_target');
   if (!text.trim() || text.length > 600) throw new Error('invalid_text');
+  if (post.target?.type === 'comment')
+    return { snippet: { parentId: post.target.commentId, textOriginal: text.trim() } };
   return {
     snippet: {
       channelId: post.channelId,
@@ -31,6 +33,13 @@ export function commentBody(post: PublicPost, text: string) {
       topLevelComment: { snippet: { textOriginal: text.trim() } },
     },
   };
+}
+export function commentEndpoint(post: PublicPost) {
+  return (
+    'https://www.googleapis.com/youtube/v3/' +
+    (post.target?.type === 'comment' ? 'comments' : 'commentThreads') +
+    '?part=snippet'
+  );
 }
 export function setupYoutubePublishing(actions: {
   current: () => PublicPost | undefined;
@@ -80,7 +89,7 @@ export function setupYoutubePublishing(actions: {
     if (!clientId)
       return {
         status: 'not_configured',
-        originalUrl: `https://www.youtube.com/watch?v=${post.videoId}`,
+        originalUrl: originalUrl(post),
         question: text,
         reason:
           'YouTube-Verbindung ist nicht eingerichtet. Frage kopieren und selbst auf YouTube posten oder einen eigenen Browser-Agenten auf YouTube beauftragen.',
@@ -88,7 +97,8 @@ export function setupYoutubePublishing(actions: {
     if (busy) return { status: 'busy' };
     pending = { post: structuredClone(post), text };
     document.getElementById('publish-preview')!.textContent = text;
-    document.getElementById('publish-target')!.textContent = `${post.title} · ${post.channel}`;
+    document.getElementById('publish-target')!.textContent =
+      `${post.target?.type === 'comment' ? 'Antwort auf einen Kommentar von' : 'Kommentar zum Beitrag von'} ${post.author?.name ?? post.channel} · ${post.title}`;
     approve.disabled = !token || expires <= Date.now();
     status(
       token
@@ -169,7 +179,7 @@ export function setupYoutubePublishing(actions: {
       status('Die Beitragsprüfung ist abgelaufen. Bitte neu laden.');
       return;
     }
-    const key = `${post.videoId}:${text}`;
+    const key = `${sourceKey(post)}:${text}`;
     if (attempts.has(key)) {
       status(
         'Dieser Versand wurde bereits versucht. Prüfe zuerst auf YouTube, ob der Kommentar angekommen ist.',
@@ -214,7 +224,8 @@ export function setupYoutubePublishing(actions: {
             p.videoId === post.videoId &&
             !p.demo &&
             Date.parse(p.expiresAt) > Date.now() &&
-            p.evidence?.quote === post.evidence.quote,
+            p.evidence?.quote === post.evidence.quote &&
+            sourceKey(p) === sourceKey(post),
         )
       ) {
         status('Der Beitrag ist nicht mehr aktuell freigegeben. Bitte neu laden.');
@@ -232,22 +243,20 @@ export function setupYoutubePublishing(actions: {
       if (
         !live?.enabled ||
         live.videoId !== post.videoId ||
-        live.evidenceQuote !== post.evidence.quote
+        live.evidenceQuote !== post.evidence.quote ||
+        live.targetKey !== sourceKey(post)
       ) {
         status('Die aktuelle Veröffentlichungsfreigabe fehlt. Es wurde nichts gesendet.');
         return;
       }
       attempts.add(key);
-      const response = await fetch(
-        'https://www.googleapis.com/youtube/v3/commentThreads?part=snippet',
-        {
-          method: 'POST',
-          credentials: 'omit',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(20000),
-        },
-      );
+      const response = await fetch(commentEndpoint(post), {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(20000),
+      });
       if (!response.ok) {
         status(
           'YouTube hat die Veröffentlichung nicht bestätigt. Prüfe Berechtigung, Kommentare und dein Konto auf YouTube. Es erfolgt kein automatischer Neuversand.',

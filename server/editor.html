@@ -77,6 +77,18 @@
     geprüft. Für manuelle Freigabe zusätzlich eine geprüfte <code>analysis</code> ergänzen;
     andernfalls analysiert der nächste Agentenlauf den Kontext.
   </p>
+  <label
+    >Ziel<select id="target-type">
+      <option value="video">Beitrag</option>
+      <option value="comment">Kommentar beantworten</option>
+    </select></label
+  >
+  <label
+    >Original-Link (bei Kommentaren mit lc=...)<input
+      id="target-url"
+      type="url"
+      placeholder="https://www.youtube.com/watch?v=...&amp;lc=..." /></label
+  ><button id="apply-target">Ziel aus Link übernehmen</button>
   <textarea id="payload" rows="18" spellcheck="false"></textarea
   ><button id="save">Redaktionellen Kontext speichern</button>
   <h2>Kandidaten</h2>
@@ -161,6 +173,29 @@
     async function refresh() {
       await load();
     }
+    $('apply-target').onclick = () => {
+      try {
+        const url = new URL($('target-url').value);
+        if (!['www.youtube.com', 'youtube.com'].includes(url.hostname) || url.protocol !== 'https:')
+          throw Error('Bitte einen YouTube-Link verwenden.');
+        const videoId = url.searchParams.get('v'),
+          commentId = url.searchParams.get('lc');
+        if (!/^[\w-]{11}$/.test(videoId || '')) throw Error('Video-ID fehlt im Link.');
+        const body = JSON.parse($('payload').value);
+        body.candidate.videoId = videoId;
+        if ($('target-type').value === 'comment') {
+          if (!/^[A-Za-z0-9_-]{5,128}$/.test(commentId || ''))
+            throw Error('Bitte den direkten Link zum Hauptkommentar verwenden.');
+          body.candidate.target = { type: 'comment', commentId };
+        } else body.candidate.target = { type: 'video' };
+        $('payload').value = JSON.stringify(body, null, 2);
+        message(
+          'Ziel übernommen. Wörtliche Aussage und Kontext prüfen. Name und Avatar werden beim Speichern von YouTube gelesen.',
+        );
+      } catch (error) {
+        message(error.message);
+      }
+    };
     $('load').onclick = () => load();
     $('save').onclick = async () => {
       try {

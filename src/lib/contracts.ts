@@ -13,20 +13,61 @@ export const profilePreferencesSchema = z.object({
 });
 export type ProfilePreferences = z.infer<typeof profilePreferencesSchema>;
 const text = (max: number) => z.string().trim().min(1).max(max);
-export const questionSchema = text(350).refine(
-  (s) => s.endsWith('?'),
-  'Eine Frage muss mit ? enden.',
-);
+export const questionSchema = text(180)
+  .refine(
+    (s) => s.endsWith('?') && (s.match(/\?/g)?.length ?? 0) === 1,
+    'Genau eine Frage mit ? am Ende verwenden.',
+  )
+  .refine(
+    (s) => s.split(/\s+/u).length <= 16,
+    'Für einfache Sprache höchstens 16 Wörter verwenden.',
+  );
 export const evidenceSchema = z.object({
   quote: text(600),
   startSeconds: z.number().int().nonnegative(),
   context: text(4000),
 });
+export const sourceAuthorSchema = z.object({
+  name: text(150),
+  channelId: z
+    .string()
+    .regex(/^UC[\w-]{22}$/)
+    .optional(),
+  avatarSourceUrl: z.url().optional(),
+});
+export type SourceAuthor = z.infer<typeof sourceAuthorSchema>;
+export const targetSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('video') }),
+  z.object({
+    type: z.literal('comment'),
+    commentId: z.string().regex(/^[A-Za-z0-9_-]{5,128}$/),
+    text: text(10000).optional(),
+    author: sourceAuthorSchema.optional(),
+  }),
+]);
+export type PostTarget = z.infer<typeof targetSchema>;
+export function sourceKey(post: { videoId: string; target?: PostTarget }) {
+  return post.target?.type === 'comment'
+    ? 'comment:' + post.target.commentId
+    : 'video:' + post.videoId;
+}
+export function originalUrl(post: {
+  videoId: string;
+  target?: PostTarget;
+  evidence: { startSeconds: number };
+}) {
+  const url = new URL('https://www.youtube.com/watch');
+  url.searchParams.set('v', post.videoId);
+  if (post.target?.type === 'comment') url.searchParams.set('lc', post.target.commentId);
+  else url.searchParams.set('t', post.evidence.startSeconds + 's');
+  return url.href;
+}
 export const candidateSchema = z.object({
   videoId: z.string().regex(/^[\w-]{11}$/),
   title: text(200),
   channel: text(150),
   channelId: z.string().regex(/^UC[\w-]{22}$/),
+  target: targetSchema.optional(),
   transcript: text(120000),
   contextSource: z.enum(['authorized_transcript', 'editorial']),
   sourceReference: text(1000),
@@ -66,6 +107,17 @@ export const publicPostSchema = z.object({
   title: z.string(),
   channel: z.string(),
   channelId: z.string().optional(),
+  target: targetSchema.optional(),
+  author: z
+    .object({
+      name: text(150),
+      profileUrl: z.url().optional(),
+      avatarUrl: z
+        .string()
+        .regex(/^\/(?:data\/avatars\/[a-f0-9]{32}\.(?:jpg|png|webp)|avatars\/[a-z-]+\.svg)$/)
+        .optional(),
+    })
+    .optional(),
   topic: topicSchema,
   summary: z.string(),
   evidence: evidenceSchema,

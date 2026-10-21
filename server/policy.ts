@@ -12,7 +12,9 @@ export function publicationIssues(candidate: Candidate, analysis: Analysis): str
     issues.push('Kontext unklar oder Gegenrede/Satire');
   if (
     analysis.evidenceQuote !== candidate.evidence.quote ||
-    !candidate.transcript.includes(candidate.evidence.quote)
+    !(
+      candidate.target?.type === 'comment' ? (candidate.target.text ?? '') : candidate.transcript
+    ).includes(candidate.evidence.quote)
   )
     issues.push('Aussage nicht wörtlich im belegten Kontext');
   if (new Set(analysis.questions.map((q) => q.toLocaleLowerCase('de'))).size !== 3)

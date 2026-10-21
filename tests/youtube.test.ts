@@ -1,5 +1,11 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { checkVideo, commentSample, discover, YoutubeError } from '../server/youtube.ts';
+import {
+  checkVideo,
+  checkSource,
+  commentSample,
+  discover,
+  YoutubeError,
+} from '../server/youtube.ts';
 const id = 'abcdefghijk',
   snippet = {
     title: 'Synthetisches Testvideo',
@@ -88,5 +94,111 @@ describe('YouTube-Adapter', () => {
     const sample = await commentSample(id, 'test-key');
     expect(sample.join('').length).toBeLessThanOrEqual(6000);
     expect(sample.join('')).not.toContain('DO NOT STORE');
+  });
+});
+
+describe('Quelle und tatsächlicher Verfasser', () => {
+  it('liest den Namen und das Profilbild des Videokanals', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          Response.json({ items: [{ snippet, status: { privacyStatus: 'public' } }] }),
+        )
+        .mockResolvedValueOnce(Response.json({ items: [] }))
+        .mockResolvedValueOnce(
+          Response.json({
+            items: [
+              {
+                snippet: {
+                  title: 'Kanalautor',
+                  thumbnails: { default: { url: 'https://yt3.ggpht.com/channel-avatar' } },
+                },
+              },
+            ],
+          }),
+        ),
+    );
+    expect(await checkSource(id, undefined, 'test-key')).toMatchObject({
+      available: true,
+      author: { name: 'Kanalautor', avatarSourceUrl: 'https://yt3.ggpht.com/channel-avatar' },
+    });
+  });
+  it('verwechselt den Kommentarautor nicht mit dem Videokanal', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          Response.json({ items: [{ snippet, status: { privacyStatus: 'public' } }] }),
+        )
+        .mockResolvedValueOnce(Response.json({ items: [] }))
+        .mockResolvedValueOnce(
+          Response.json({
+            items: [
+              {
+                id: 'comment-12345',
+                snippet: {
+                  videoId: id,
+                  textOriginal: 'Originalkommentar',
+                  authorDisplayName: 'Kommentarautor',
+                  authorProfileImageUrl: 'https://yt3.ggpht.com/comment-avatar',
+                  authorChannelId: { value: 'UC' + 'z'.repeat(22) },
+                },
+              },
+            ],
+          }),
+        ),
+    );
+    const result = await checkSource(
+      id,
+      { type: 'comment', commentId: 'comment-12345' },
+      'test-key',
+    );
+    expect(result).toMatchObject({
+      available: true,
+      author: { name: 'Kommentarautor', channelId: 'UC' + 'z'.repeat(22) },
+      target: { type: 'comment', commentId: 'comment-12345', text: 'Originalkommentar' },
+    });
+  });
+  it('sperrt bearbeitete, fremde und verschachtelte Kommentarziele', async () => {
+    for (const changed of [
+      { textOriginal: 'Bearbeitet' },
+      { videoId: 'other-video' },
+      { parentId: 'another-comment' },
+    ]) {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce(
+            Response.json({ items: [{ snippet, status: { privacyStatus: 'public' } }] }),
+          )
+          .mockResolvedValueOnce(Response.json({ items: [] }))
+          .mockResolvedValueOnce(
+            Response.json({
+              items: [
+                {
+                  id: 'comment-12345',
+                  snippet: {
+                    videoId: id,
+                    textOriginal: 'Original',
+                    authorDisplayName: 'Name',
+                    ...changed,
+                  },
+                },
+              ],
+            }),
+          ),
+      );
+      expect(
+        await checkSource(
+          id,
+          { type: 'comment', commentId: 'comment-12345', text: 'Original' },
+          'test-key',
+        ),
+      ).toEqual({ available: false });
+    }
   });
 });

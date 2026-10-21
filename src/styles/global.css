@@ -699,3 +699,48 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.post-original {
+  display: inline-flex;
+  color: var(--green);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin: 0 0 12px;
+}
+.post-card h2 a[href]:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.demo-source {
+  color: var(--muted);
+  font-size: 10px;
+  margin: 0 0 15px;
+}
+
+.source-author {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  margin-top: 20px;
+}
+.source-author img {
+  border-radius: 50%;
+  object-fit: cover;
+  background: #edf0e6;
+  flex-shrink: 0;
+}
+.source-author p {
+  margin: 0 0 2px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.source-author a {
+  font-size: 13px;
+  font-weight: 500;
+}
+.source-author a[href]:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

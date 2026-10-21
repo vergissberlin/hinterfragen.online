@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createTools } from '../src/lib/webmcp.ts';
-import { commentBody } from '../src/lib/youtube-publish.ts';
+import { commentBody, commentEndpoint } from '../src/lib/youtube-publish.ts';
 import { demoCatalog } from '../src/lib/demo.ts';
 describe('WebMCP und YouTube', () => {
   it('stellt strukturierte Daten bereit, validiert Eingaben und veröffentlicht nie selbst', () => {
@@ -43,5 +43,23 @@ describe('WebMCP und YouTube', () => {
       },
     });
     expect(() => commentBody(post, '')).toThrow();
+  });
+});
+
+describe('Antwortziel', () => {
+  it('erzeugt für eine Antwort ausschließlich parentId und Text', () => {
+    const post = {
+      ...demoCatalog.posts[0],
+      demo: false,
+      videoId: 'abcdefghijk',
+      channelId: 'UC' + 'x'.repeat(22),
+      target: { type: 'comment' as const, commentId: 'comment-12345' },
+    };
+    expect(commentBody(post, 'Woher weißt du das?')).toEqual({
+      snippet: { parentId: 'comment-12345', textOriginal: 'Woher weißt du das?' },
+    });
+    expect(commentEndpoint(post)).toBe(
+      'https://www.googleapis.com/youtube/v3/comments?part=snippet',
+    );
   });
 });

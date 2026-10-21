@@ -7,12 +7,14 @@ import type { Db } from './db.ts';
 import type { Config } from './config.ts';
 import {
   candidateSchema,
+  sourceKey,
+  type PostTarget,
   analysisSchema,
   eventSchema,
   importSchema,
 } from '../src/lib/contracts.ts';
 import { digest, loadCalibration, publicationIssues } from './policy.ts';
-import { checkVideo } from './youtube.ts';
+import { checkSource, type Verification } from './youtube.ts';
 import { exportCatalog } from './catalog.ts';
 const discoverySchema = z
   .object({
@@ -33,7 +35,8 @@ const discoverySchema = z
 export async function buildApp(
   db: Db,
   config: Config,
-  verifyVideo = (id: string) => checkVideo(id, config.YOUTUBE_API_KEY),
+  verifyVideo: (id: string, target?: PostTarget) => Promise<Verification> = (id, target) =>
+    checkSource(id, target, config.YOUTUBE_API_KEY),
 ) {
   const app = Fastify({ bodyLimit: 512000, logger: false, trustProxy: false });
   await app.register(rateLimit, {
@@ -117,7 +120,12 @@ export async function buildApp(
       ).rows[0];
       if (!row?.checked_at || new Date(row.checked_at).getTime() <= Date.now() - 7200000)
         return { enabled: false };
-      return { enabled: true, videoId: row.video_id, evidenceQuote: row.body?.evidence?.quote };
+      return {
+        enabled: true,
+        videoId: row.video_id,
+        evidenceQuote: row.body?.evidence?.quote,
+        targetKey: sourceKey({ videoId: row.video_id, target: row.body?.target }),
+      };
     },
   );
   app.post(
@@ -184,7 +192,7 @@ export async function buildApp(
     async () =>
       (
         await db.query(
-          'SELECT id,video_id,title,channel,status,reason,body,analysis,checked_at FROM candidates ORDER BY updated_at DESC LIMIT 100',
+          'SELECT id,video_id,title,channel,channel_id,status,reason,body,analysis,checked_at FROM candidates ORDER BY updated_at DESC LIMIT 100',
         )
       ).rows,
   );
@@ -194,12 +202,23 @@ export async function buildApp(
     let inserted = 0;
     for (const video of videos) {
       if (
-        (await db.query('SELECT id FROM candidates WHERE video_id=$1', [video.videoId])).rows.length
+        (
+          await db.query('SELECT id FROM candidates WHERE source_key=$1', [
+            'video:' + video.videoId,
+          ])
+        ).rows.length
       )
         continue;
       const r = await db.query(
-        'INSERT INTO candidates(id,video_id,title,channel,channel_id) VALUES($1,$2,$3,$4,$5) ON CONFLICT(video_id) DO NOTHING RETURNING id',
-        [randomUUID(), video.videoId, video.title, video.channel, video.channelId],
+        'INSERT INTO candidates(id,video_id,title,channel,channel_id,source_key) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(source_key) DO NOTHING RETURNING id',
+        [
+          randomUUID(),
+          video.videoId,
+          video.title,
+          video.channel,
+          video.channelId,
+          'video:' + video.videoId,
+        ],
       );
       inserted += r.rows.length;
     }
@@ -210,7 +229,7 @@ export async function buildApp(
       .object({ candidate: candidateSchema, analysis: analysisSchema.optional() })
       .strict()
       .parse(request.body);
-    const verified = await verifyVideo(input.candidate.videoId);
+    const verified = await verifyVideo(input.candidate.videoId, input.candidate.target);
     if (!verified.available || !verified.video)
       return { saved: false, reason: 'Video oder offene Kommentare nicht verfügbar.' };
     const candidate = {
@@ -218,14 +237,21 @@ export async function buildApp(
       title: verified.video.title,
       channel: verified.video.channel,
       channelId: verified.video.channelId,
+      ...(verified.target?.type === 'comment' ? { target: verified.target } : {}),
     };
-    if (!candidate.transcript.includes(candidate.evidence.quote))
+    if (candidate.target?.type === 'comment' && verified.target?.type !== 'comment')
+      return { saved: false, reason: 'Kommentar konnte nicht geprüft werden.' };
+    if (
+      !(
+        candidate.target?.type === 'comment' ? (candidate.target.text ?? '') : candidate.transcript
+      ).includes(candidate.evidence.quote)
+    )
       return { saved: false, reason: 'Beleg fehlt wörtlich im Kontext.' };
     const id = randomUUID();
     await db.query(
-      `INSERT INTO candidates(id,video_id,title,channel,channel_id,status,body,body_digest,analysis,checked_at)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-      ON CONFLICT(video_id) DO UPDATE SET title=EXCLUDED.title,channel=EXCLUDED.channel,channel_id=EXCLUDED.channel_id,status=EXCLUDED.status,body=EXCLUDED.body,body_digest=EXCLUDED.body_digest,analysis=EXCLUDED.analysis,checked_at=EXCLUDED.checked_at,reason=NULL,source_updated_at=now(),updated_at=now()`,
+      `INSERT INTO candidates(id,video_id,title,channel,channel_id,status,body,body_digest,analysis,checked_at,source_key,source_author)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      ON CONFLICT(source_key) DO UPDATE SET title=EXCLUDED.title,channel=EXCLUDED.channel,channel_id=EXCLUDED.channel_id,status=EXCLUDED.status,body=EXCLUDED.body,body_digest=EXCLUDED.body_digest,analysis=EXCLUDED.analysis,checked_at=EXCLUDED.checked_at,source_author=EXCLUDED.source_author,reason=NULL,source_updated_at=now(),updated_at=now()`,
       [
         id,
         candidate.videoId,
@@ -237,6 +263,8 @@ export async function buildApp(
         digest(candidate),
         input.analysis ?? null,
         verified.checkedAt,
+        sourceKey(candidate),
+        verified.author ?? { name: verified.video.channel, channelId: verified.video.channelId },
       ],
     );
     await exportCatalog(db, config);
@@ -258,7 +286,7 @@ export async function buildApp(
     ]);
     if (previous.rows.length) return { imported: true, duplicate: true };
     const row = (
-      await db.query('SELECT * FROM candidates WHERE video_id=$1', [input.candidate.videoId])
+      await db.query('SELECT * FROM candidates WHERE source_key=$1', [sourceKey(input.candidate)])
     ).rows[0];
     if (!row || row.status !== 'ready' || row.body_digest !== digest(input.candidate))
       return reply.code(409).send({ error: 'Kandidat oder Kontext ist nicht mehr aktuell.' });
@@ -277,7 +305,7 @@ export async function buildApp(
     const issues = publicationIssues(input.candidate, input.analysis);
     const check =
       permitted && !issues.length
-        ? await verifyVideo(input.candidate.videoId)
+        ? await verifyVideo(input.candidate.videoId, input.candidate.target)
         : { available: false, checkedAt: undefined };
     const publish = permitted && !issues.length && check.available;
     const connection = await db.connect();
@@ -338,7 +366,7 @@ export async function buildApp(
       analysisSchema.parse(row.analysis),
     );
     if (issues.length) return { published: false, reason: issues.join('; ') };
-    const check = await verifyVideo(row.video_id);
+    const check = await verifyVideo(row.video_id, row.body.target);
     if (!check.available)
       return { published: false, reason: 'Video oder Kommentare nicht verfügbar.' };
     const updated = await db.query(

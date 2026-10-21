@@ -5,9 +5,10 @@ Stand: 21. Oktober 2026. Lokale Implementierung und technische Vorschau; keine p
 ## Durchgeführt
 
 - Astro-/TypeScript-Prüfung ohne Fehler, Warnungen oder Hinweise.
-- 27 Unit-/Integrationstests erfolgreich: Inhaltsbelege, Publikationsgrenzen, Kalibrierungssperre, Redaktion und Rollen, idempotente Imports, Rücknahmen, konkurrierende Freigabe, Datenablauf, Ereignisaggregation und YouTube-Fehlerfälle.
-- Dieselben 27 Tests zusätzlich gegen echtes PostgreSQL 17 im lokalen Docker-Netz ausgeführt. Jeder Test nutzt ein eigenes Schema; die redaktionelle Datenbank wurde nicht mit Testbeiträgen befüllt.
-- 16 Browserfälle: Desktop und mobiles Chromium, lokale Themenfilter und Zähler, Kopieren und Bearbeiten, Tastatur und native Touch-Gesten, fehlender/abgelaufener Katalog, Trackingausfall und optionale YouTube-Veröffentlichung mit simuliertem Google-Dienst.
+- 36 Unit-/Integrationstests erfolgreich: Inhaltsbelege, Publikationsgrenzen, Kalibrierungssperre, Redaktion und Rollen, idempotente Imports, Rücknahmen, konkurrierende Freigabe, Datenablauf, Ereignisaggregation und YouTube-Fehlerfälle.
+- Dieselben 36 Tests zusätzlich gegen echtes PostgreSQL 17 im lokalen Docker-Netz ausgeführt. Jeder Test nutzt ein eigenes Schema; die redaktionelle Datenbank wurde nicht mit Testbeiträgen befüllt.
+- 19 Browserfälle: Desktop und mobiles Chromium, lokale Themenfilter und Zähler, Kopieren und Bearbeiten, Tastatur und native Touch-Gesten, fehlender/abgelaufener Katalog, Trackingausfall und optionale YouTube-Veröffentlichung mit simuliertem Google-Dienst.
+- Beitrags- und Kommentarziele getrennt getestet: Original-Link vor der Frageauswahl, tatsächlicher Verfasser, lokaler Avatar-Ersatz, zielgenaue Antwort mit `parentId`, getrennte Quellen am selben Video und serverseitiger Bildcache.
 - Native WebMCP-Registrierung und Ausführung aller vier Werkzeuge in Chromium 156 mit aktivierter experimenteller Schnittstelle geprüft, zusätzlich zu den simulierten Vertragstests. Kein externer KI-Agent als Testperson verwendet.
 - YouTube-Simulationen bestätigen: kein Versand vor Freigabeklick, kein Token im lokalen Speicher, kein automatischer Retry bei unklarem Ergebnis, kein Versand bei Angriffsmodus, zurückgenommenem Beitrag oder fehlender Backend-Freigabe.
 - Produktions-Build und alle drei Dockerimages gebaut. Compose-Konfiguration geprüft; Dienste lokal gestartet.

@@ -23,7 +23,8 @@ npm run test:e2e
 
 ## Enthalten
 
-- Anonyme Kartenansicht, Themenfilter, Swipe und Tastaturbedienung, editierbare Fragen und lokaler Aktivitätszähler.
+- Anonyme Kartenansicht, Themenfilter, Swipe und Tastaturbedienung, Fragen in einfacher Sprache und lokaler Aktivitätszähler.
+- Direkter Original-Link sowie Name und Avatar des Beitragsautors oder des ausgewählten Kommentarautors; Antworten landen im passenden Thread.
 - PostgreSQL, interne Redaktion, begrenztes Klicktracking, statischer Katalog und Docker Compose.
 - Zeitgesteuerter Llama-Agent mit getrenntem Modell-/Runtime-Cache und gesperrter Automatik bis zur redaktionellen Kalibrierung.
 - A4 mit sechs QR-Karten sowie A3-/A2-Plakate.

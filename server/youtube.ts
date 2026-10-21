@@ -1,3 +1,4 @@
+import { sourceAuthorSchema, type SourceAuthor, type PostTarget } from '../src/lib/contracts.ts';
 import { z } from 'zod';
 const snippetSchema = z.object({
   title: z.string(),
@@ -105,4 +106,76 @@ export async function commentSample(videoId: string, key: string): Promise<strin
       return excerpt;
     })
     .filter(Boolean);
+}
+
+export type Verification = {
+  available: boolean;
+  checkedAt?: string;
+  video?: Video;
+  target?: PostTarget;
+  author?: SourceAuthor;
+};
+export async function checkSource(
+  videoId: string,
+  target: PostTarget | undefined,
+  key: string,
+): Promise<Verification> {
+  const video = await checkVideo(videoId, key);
+  if (!video.available || !video.video) return { available: false };
+  if (target?.type === 'comment') {
+    let response;
+    try {
+      response = await youtubeGet(
+        'comments',
+        { part: 'snippet', id: target.commentId, textFormat: 'plainText' },
+        key,
+      );
+    } catch (error) {
+      if (
+        error instanceof YoutubeError &&
+        ['commentNotFound', 'videoNotFound', 'forbidden'].includes(error.code)
+      )
+        return { available: false };
+      throw error;
+    }
+    const item = response.items?.find((c: { id: string }) => c.id === target.commentId),
+      snippet = item?.snippet;
+    if (
+      !snippet ||
+      snippet.videoId !== videoId ||
+      snippet.parentId ||
+      typeof snippet.textOriginal !== 'string'
+    )
+      return { available: false };
+    // Edited comments require a fresh analysis. Never publish a stale quote as a new statement.
+    if (target.text !== undefined && target.text !== snippet.textOriginal)
+      return { available: false };
+    const channelId = snippet.authorChannelId?.value;
+    const author = sourceAuthorSchema.parse({
+      name: snippet.authorDisplayName || 'Name nicht verfügbar',
+      ...(typeof channelId === 'string' && /^UC[\w-]{22}$/.test(channelId) ? { channelId } : {}),
+      ...(typeof snippet.authorProfileImageUrl === 'string'
+        ? { avatarSourceUrl: snippet.authorProfileImageUrl }
+        : {}),
+    });
+    return {
+      ...video,
+      target: { type: 'comment', commentId: target.commentId, text: snippet.textOriginal, author },
+      author,
+    };
+  }
+  const response = await youtubeGet(
+    'channels',
+    { part: 'snippet', id: video.video.channelId },
+    key,
+  );
+  const snippet = response.items?.[0]?.snippet;
+  const author = sourceAuthorSchema.parse({
+    name: snippet?.title || video.video.channel,
+    channelId: video.video.channelId,
+    ...(snippet?.thumbnails?.default?.url
+      ? { avatarSourceUrl: snippet.thumbnails.default.url }
+      : {}),
+  });
+  return { ...video, author };
 }

@@ -1,4 +1,12 @@
-import { catalogSchema, selectPost, topics, type Catalog, type PublicPost } from './contracts.ts';
+import {
+  originalUrl as sourceUrl,
+  sourceKey,
+  catalogSchema,
+  selectPost,
+  topics,
+  type Catalog,
+  type PublicPost,
+} from './contracts.ts';
 import { demoCatalog } from './demo.ts';
 import { registerWebMcp } from './webmcp.ts';
 import { setupYoutubePublishing } from './youtube-publish.ts';
@@ -86,13 +94,44 @@ function next() {
     'post-source',
     current.demo ? 'BEISPIEL · KEIN REALER BEITRAG' : `YouTube · ${current.channel}`,
   );
-  set('post-title', current.title);
+  const isReply = current.target?.type === 'comment';
+  set('post-title-link', isReply ? 'Kommentar zu: ' + current.title : current.title);
+  set('post-author-label', isReply ? 'Kommentar von' : 'Beitrag von');
+  const authorName = current.author?.name ?? current.channel;
+  set('post-author-name', authorName);
+  const authorLink = element<HTMLAnchorElement>('post-author-name');
+  if (current.author?.profileUrl?.startsWith('https://www.youtube.com/channel/'))
+    authorLink.href = current.author.profileUrl;
+  else authorLink.removeAttribute('href');
+  const avatar = element<HTMLImageElement>('post-author-avatar');
+  avatar.src = current.author?.avatarUrl ?? '/avatars/placeholder.svg';
+  avatar.alt = 'Profilbild von ' + authorName;
+  avatar.onerror = () => {
+    avatar.onerror = null;
+    avatar.src = '/avatars/placeholder.svg';
+  };
+  set(
+    'post-original',
+    isReply ? 'Original-Kommentar auf YouTube ansehen ↗' : 'Originalbeitrag auf YouTube ansehen ↗',
+  );
+  const originalUrl = current.demo ? undefined : sourceUrl(current);
+  for (const id of ['post-title-link', 'post-original']) {
+    const link = element<HTMLAnchorElement>(id);
+    if (originalUrl) link.href = originalUrl;
+    else link.removeAttribute('href');
+  }
+  show('post-original', !current.demo);
+  show('post-demo-source', Boolean(current.demo));
   set('post-summary', current.summary);
   set('post-quote', current.evidence.quote);
   const seconds = current.evidence.startSeconds;
   set(
     'post-timestamp',
-    `${current.demo ? 'Fiktive Aussage' : 'Aussage im Video'} · ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
+    isReply
+      ? current.demo
+        ? 'Erfundener Kommentar'
+        : 'Kommentar auf YouTube'
+      : `${current.demo ? 'Fiktive Aussage' : 'Aussage im Video'} · ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
   );
   set('post-context', current.evidence.context);
   set(
@@ -123,8 +162,7 @@ function chooseQuestion(index: number, scroll = false) {
   show('youtube-publish', Boolean(import.meta.env.PUBLIC_YOUTUBE_CLIENT_ID) && !post.demo);
   show('original-link', !post.demo);
   show('demo-question-note', Boolean(post.demo));
-  if (!post.demo)
-    link.href = `https://www.youtube.com/watch?v=${post.videoId}&t=${post.evidence.startSeconds}s`;
+  if (!post.demo) link.href = sourceUrl(post);
   else link.removeAttribute('href');
   if (scroll)
     element('question-panel').scrollIntoView({
@@ -136,6 +174,8 @@ function chooseQuestion(index: number, scroll = false) {
     videoId: post.videoId,
     question: element<HTMLTextAreaElement>('question-editor').value,
     originalUrl: post.demo ? null : link.href,
+    targetKey: sourceKey(post),
+    target: post.target ?? { type: 'video' },
     demo: post.demo,
   };
 }
@@ -207,10 +247,11 @@ element('copy-question').addEventListener('click', async () => {
     feedback('Kopieren ist hier gesperrt. Du kannst den markierten Text selbst kopieren.');
   }
 });
-element('original-link').addEventListener('click', (event) => {
-  if (!activePost()) event.preventDefault();
-  else record('original_open');
-});
+for (const id of ['original-link', 'post-original', 'post-title-link'])
+  element(id).addEventListener('click', (event) => {
+    if (!activePost() || current?.demo) event.preventDefault();
+    else record('original_open');
+  });
 async function load(preserve = false) {
   show('retry-catalog', false);
   try {
@@ -240,7 +281,9 @@ async function load(preserve = false) {
         fresh &&
         fresh.summary === current.summary &&
         JSON.stringify(fresh.evidence) === JSON.stringify(current.evidence) &&
-        JSON.stringify(fresh.questions) === JSON.stringify(current.questions)
+        JSON.stringify(fresh.questions) === JSON.stringify(current.questions) &&
+        sourceKey(fresh) === sourceKey(current) &&
+        JSON.stringify(fresh.author) === JSON.stringify(current.author)
       ) {
         current = fresh;
         return;
