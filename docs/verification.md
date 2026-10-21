@@ -34,3 +34,15 @@ GitHub-CI wurde anschließend im Merge-PR gestartet. Für den Remote-Status sind
 - Physischer Testausdruck und Scan, externes Backup mit Wiederherstellungstest, externe Alarmierung für Ausfälle und leeren Katalog.
 
 Profile, Portal-OAuth, öffentliche Bestenliste und nicht-sachliche Tonalitäten bleiben wie vereinbart Phase 2. Der vorbereitete Datenvertrag allein ist keine implementierte Profilfunktion.
+
+## Codex-Pilot · 22.10.2026
+
+- Eigenständiges Runtime-Paket mit echten MCP-STDIO-Aufrufen ohne Repository/node_modules und ohne Modellschlüssel geprüft.
+- Plugin in isolierter Codex-CLI-Konfiguration über lokalen Marketplace installiert; bestehende persönliche Codex-Konfiguration unverändert.
+- PostgreSQL-Integration einschließlich paralleler Duplikate und Tageslimit erfolgreich; insgesamt 61 Unit-/Integrationstests.
+- 21 Playwright-Fälle erfolgreich, einschließlich neuer Redaktionsansicht mit untrusted HTML als reinem Text und eigener Kontextbestätigung vor Übernahme.
+- Astro/TypeScript ohne Diagnosen, Website-Build sowie Backend- und Web-Docker-Build erfolgreich.
+- Isolierter nginx→Backend→PostgreSQL-Smoke-Test: 202 bei neuer Einreichung, 200 bei Wiederholung, 401 bei fehlendem/widerrufenem Schlüssel, 413 bei Übergröße; interne Redaktion öffentlich mit 404 gesperrt. Schlüssel über Betreiber-CLI erstellt und widerrufen; kein Schlüssel in Testausgaben.
+- Alle drei Skill-Frontmatter mit dem skill-creator-Validator geprüft. Zentraler Analyse-Cron entfernt.
+
+Noch offen: Desktop-Installation/Update unter zweitem persönlichem Nutzerkonto, reale Recherche mit dessen Kontingent und Veröffentlichung auf ausdrücklich vorgesehenem Testvideo. Automatisierte Browserfälle simulieren externe YouTube-Antworten und beweisen keine reale Veröffentlichung oder zuverlässige semantische Einordnung durch einen Agenten. [Pilot-Abnahmeliste](codex-plugin.md).

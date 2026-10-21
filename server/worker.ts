@@ -45,6 +45,8 @@ export async function maintenance(
   }
   // Remove source material, derivatives and API metadata together at the retention boundary.
   await db.query("DELETE FROM candidates WHERE source_updated_at < now() - interval '30 days'");
+  await db.query("DELETE FROM contributions WHERE created_at < now() - interval '30 days'");
+  await db.query('DELETE FROM contribution_daily_quota WHERE day < current_date - 30');
   await cleanAvatars(config.DATA_DIR);
   await exportCatalog(db, config);
   return { checked: rows.length, failures };

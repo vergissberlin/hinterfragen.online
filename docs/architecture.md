@@ -9,7 +9,12 @@ flowchart LR
   Events --> DB[(PostgreSQL)]
   Worker[Wartungsdienst] --> DB
   Worker --> Catalog
-  Action[GitHub Actions / llama.cpp] --> Import[Geschützter Import]
+  Codex[Persönlicher Codex / Plugin] --> Local[Lokales MCP / Einstellungen]
+  Local --> Contributions[Einreichungs-API / persönliche Schlüssel]
+  Contributions --> Review[Redaktionelle Prüfung]
+  Review --> DB
+  Codex --> PersonalBrowser[Persönlicher YouTube-Browser]
+  Action[Optional manuell: GitHub Actions / llama.cpp] --> Import[Geschützter Import]
   Import --> DB
   Editor[Interne Redaktion] --> DB
   User -->|explizite Freigabe und OAuth| YouTube[YouTube Kommentar-API]
@@ -67,3 +72,11 @@ Die Migration ersetzt die eindeutige Video-ID durch `source_key` (`video:ID` bzw
 Profilbilder werden nur von fest erlaubten YouTube-Bildhosts ohne Weiterleitungen geholt, auf 128 KiB und Rasterformate begrenzt und lokal gecacht. Ein fehlendes Bild hat einen sichtbaren lokalen Ersatz. Name und Original-Link bleiben erhalten. Der Cache wird täglich erneuert und nach spätestens 30 Tagen bereinigt.
 
 Fragevorschläge verwenden einfache Alltagssprache, genau eine Frage, höchstens 16 Wörter und 180 Zeichen. Eigene Änderungen im Textfeld bleiben möglich. Der geänderte Prompt und Datenvertrag benötigen vor erneuter automatischer Freigabe eine neue Kalibrierung.
+
+## Codex-Pilot
+
+Der Standardablauf nutzt persönliche Codex-Zugänge der Teilnehmenden. Der lokale STDIO-MCP-Server führt keine Modellaufrufe aus und hält Einstellungen, Recherche und Versandhistorie außerhalb des Plugin-Pakets. Er reicht Ergebnisse über `POST /api/contributions` ein, falls die Person die standardmäßig aktivierte Einreichung nicht abschaltet. Es gibt keine zentrale Analyse im Zeitplan.
+
+Einreichungen sind getrennt von Kandidaten und internen Agentenimporten. Ein persönlicher Schlüssel darf ausschließlich einreichen. PostgreSQL serialisiert neue Einreichungen, idempotente Wiederholungen und das Tageslimit pro Schlüssel. Nur die Redaktion kann vollständige, selbst geprüfte Quellen in einen neuen Entwurf übernehmen; vorhandene Kandidaten bleiben erhalten. Veröffentlichung im Katalog und persönliche YouTube-Kommentare sind unabhängige Aktionen.
+
+[Installation, vollständiger Vertrag, Einstellungen und Abnahme](codex-plugin.md).

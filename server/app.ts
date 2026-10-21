@@ -16,6 +16,7 @@ import {
 import { digest, loadCalibration, publicationIssues } from './policy.ts';
 import { checkSource, type Verification } from './youtube.ts';
 import { exportCatalog } from './catalog.ts';
+import { registerContributions } from './contributions.ts';
 const discoverySchema = z
   .object({
     videos: z
@@ -388,5 +389,6 @@ export async function buildApp(
     return { withdrawn: true };
   });
   app.post('/internal/export', async () => ({ posts: await exportCatalog(db, config) }));
+  await registerContributions(app, db, (id) => verifyVideo(id));
   return app;
 }

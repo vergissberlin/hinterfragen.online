@@ -2,7 +2,7 @@
 
 ## Zeitgesteuerter Betrieb
 
-Workflow `.github/workflows/agent.yml` läuft alle sechs Stunden oder manuell, nur auf dem vertrauenswürdigen Default-Branch mit gesetzten Variablen. Es gibt keinen `pull_request_target`-Trigger, keine Ausgabe von Quelldaten und keine öffentlichen Ergebnisartefakte. Ein Lauf hat maximal 30 Minuten; parallele Läufe werden vermieden.
+Der ältere Workflow `.github/workflows/agent.yml` läuft ausschließlich manuell, nur auf dem vertrauenswürdigen Default-Branch mit gesetzten Variablen. Es gibt keinen `pull_request_target`-Trigger, keine Ausgabe von Quelldaten und keine öffentlichen Ergebnisartefakte. Ein Lauf hat maximal 30 Minuten; parallele Läufe werden vermieden.
 
 GitHub Actions Variablen:
 
