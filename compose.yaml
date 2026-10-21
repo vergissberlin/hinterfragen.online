@@ -1,0 +1,122 @@
+name: hinterfragen
+x-backend: &backend
+  build: { context: ., target: backend }
+  environment: &environment
+    DATABASE_URL: postgres://portal:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/portal
+    ADMIN_TOKEN: ${ADMIN_TOKEN:?Set ADMIN_TOKEN}
+    AGENT_TOKEN: ${AGENT_TOKEN:?Set AGENT_TOKEN}
+    PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+    YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+    AUTO_PUBLISH: ${AUTO_PUBLISH:-false}
+    CALIBRATION_PATH: /calibration/calibration.json
+    MODEL_SHA256: ${MODEL_SHA256:-}
+    PROMPT_SHA256: ${PROMPT_SHA256:-}
+    CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-}
+    CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+    LIVE_MODE: ${LIVE_MODE:-false}
+  volumes: [catalog:/data, ./config:/calibration:ro]
+  restart: unless-stopped
+  init: true
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: portal
+      POSTGRES_DB: portal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      {
+        test: [CMD-SHELL, 'pg_isready -U portal -d portal'],
+        interval: 5s,
+        timeout: 3s,
+        retries: 15,
+      }
+    restart: unless-stopped
+    networks: [private]
+    security_opt: [no-new-privileges:true]
+  backend:
+    <<: *backend
+    ports: ['127.0.0.1:3001:3001']
+    depends_on: { db: { condition: service_healthy } }
+    networks: [private, edge]
+    healthcheck:
+      {
+        test:
+          [
+            CMD,
+            node,
+            -e,
+            "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          ],
+        interval: 10s,
+        timeout: 5s,
+        retries: 10,
+      }
+  worker:
+    <<: *backend
+    command: [npm, run, worker]
+    depends_on: { backend: { condition: service_healthy } }
+    networks: [private, edge]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "const f=require('fs');try{process.exit(Date.now()-f.statSync('/data/runtime.json').mtimeMs<180000?0:1)}catch{process.exit(1)}",
+        ]
+      interval: 60s
+      timeout: 5s
+      retries: 2
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        PUBLIC_DEMO_MODE: ${PUBLIC_DEMO_MODE:-false}
+        PUBLIC_YOUTUBE_CLIENT_ID: ${PUBLIC_YOUTUBE_CLIENT_ID:-}
+        PUBLIC_OPERATOR_NAME: ${PUBLIC_OPERATOR_NAME:-}
+        PUBLIC_OPERATOR_ADDRESS: ${PUBLIC_OPERATOR_ADDRESS:-}
+        PUBLIC_OPERATOR_EMAIL: ${PUBLIC_OPERATOR_EMAIL:-}
+        LIVE_MODE: ${LIVE_MODE:-false}
+    ports: ['127.0.0.1:8080:8080']
+    volumes: [catalog:/runtime:ro]
+    depends_on: { backend: { condition: service_healthy } }
+    networks: [edge]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    healthcheck:
+      {
+        test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8080/health'],
+        interval: 20s,
+        timeout: 5s,
+        retries: 3,
+      }
+  tunnel:
+    image: cloudflare/cloudflared:2026.10.3
+    profiles: [cloudflare]
+    command: [tunnel, --no-autoupdate, run]
+    environment: { TUNNEL_TOKEN: '${CLOUDFLARE_TUNNEL_TOKEN:-}' }
+    networks:
+      edge: { ipv4_address: 172.29.74.5 }
+    depends_on: [web]
+    restart: unless-stopped
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+networks:
+  private: { internal: true }
+  edge:
+    ipam:
+      config: [{ subnet: 172.29.74.0/24 }]
+volumes:
+  postgres: {}
+  catalog: {}

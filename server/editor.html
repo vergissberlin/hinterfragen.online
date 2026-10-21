@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="de">
+  <meta charset="UTF-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>hinterfragen · Redaktion</title
+  ><style>
+    body {
+      font: 15px/1.6 system-ui;
+      max-width: 1000px;
+      margin: 35px auto;
+      padding: 20px;
+      background: #f8f7f2;
+      color: #25382f;
+    }
+    h1 {
+      font-family: Georgia;
+    }
+    input,
+    textarea,
+    button,
+    select {
+      font: inherit;
+      padding: 10px;
+      border: 1px solid #ccd6c3;
+      border-radius: 6px;
+    }
+    input,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+    }
+    button {
+      cursor: pointer;
+      background: white;
+      margin: 6px 8px 6px 0;
+    }
+    textarea {
+      min-height: 110px;
+    }
+    article {
+      padding: 20px;
+      border: 1px solid #dce2d5;
+      border-radius: 10px;
+      margin: 15px 0;
+      background: white;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #message {
+      padding: 15px;
+      background: #e5ebdf;
+    }
+  </style>
+  <h1>hinterfragen. Redaktion</h1>
+  <p>Nur intern verwenden. Token bleibt im Arbeitsspeicher dieses Tabs.</p>
+  <label>Admin-Token<input id="token" type="password" autocomplete="off" /></label
+  ><button id="load">Verbinden / Aktualisieren</button>
+  <p id="message" role="status">Nicht verbunden.</p>
+  <pre id="status"></pre>
+  <div>
+    <button data-flag="attack_mode" data-enabled="true">Angriffsmodus an</button
+    ><button data-flag="attack_mode" data-enabled="false">Angriffsmodus aus</button
+    ><button data-flag="publication_paused" data-enabled="true">Veröffentlichung pausieren</button
+    ><button data-flag="publication_paused" data-enabled="false">Veröffentlichung freigeben</button
+    ><button id="export">Katalog / CDN erneut aktualisieren</button>
+  </div>
+  <h2>Kontext ergänzen oder korrigieren</h2>
+  <p>
+    Im Format unten speichern. Titel, Kanal und Kanal-ID werden vor dem Speichern gegen YouTube
+    geprüft. Für manuelle Freigabe zusätzlich eine geprüfte <code>analysis</code> ergänzen;
+    andernfalls analysiert der nächste Agentenlauf den Kontext.
+  </p>
+  <textarea id="payload" rows="18" spellcheck="false"></textarea
+  ><button id="save">Redaktionellen Kontext speichern</button>
+  <h2>Kandidaten</h2>
+  <div id="candidates"></div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let rows = [];
+    const message = (text) => {
+      $('message').textContent = text;
+    };
+    async function api(path, body) {
+      const r = await fetch('/internal/' + path, {
+        method: body ? 'POST' : 'GET',
+        headers: {
+          Authorization: 'Bearer ' + $('token').value,
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      if (!r.ok) throw Error('Anfrage fehlgeschlagen (' + r.status + ').');
+      return r.json();
+    }
+    async function load() {
+      try {
+        $('status').textContent = JSON.stringify(await api('status'), null, 2);
+        rows = await api('candidates');
+        $('candidates').replaceChildren(
+          ...rows.map((row) => {
+            const box = document.createElement('article'),
+              title = document.createElement('h3'),
+              detail = document.createElement('p');
+            title.textContent = row.title;
+            detail.textContent = row.status + ' · ' + row.channel + ' · ' + (row.reason || '');
+            box.append(title, detail);
+            for (const [label, path] of [
+              ['Bearbeiten', 'edit'],
+              ['Manuell veröffentlichen', 'publish'],
+              ['Zurückziehen', 'withdraw'],
+            ]) {
+              const b = document.createElement('button');
+              b.textContent = label;
+              b.onclick = async () => {
+                if (path === 'edit') {
+                  $('payload').value = JSON.stringify(
+                    {
+                      candidate: row.body ?? {
+                        videoId: row.video_id,
+                        title: row.title,
+                        channel: row.channel,
+                        channelId: 'UC0000000000000000000000',
+                        transcript: '',
+                        contextSource: 'editorial',
+                        sourceReference: 'Redaktionelle Sichtung, Datum und Fundstelle',
+                        language: 'de',
+                        evidence: { quote: '', startSeconds: 0, context: '' },
+                      },
+                      ...(row.analysis ? { analysis: row.analysis } : {}),
+                    },
+                    null,
+                    2,
+                  );
+                  $('payload').focus();
+                  return;
+                }
+                try {
+                  const result = await api(path, { id: row.id });
+                  message(JSON.stringify(result));
+                  await refresh();
+                } catch (e) {
+                  message(e.message);
+                }
+              };
+              box.append(b);
+            }
+            return box;
+          }),
+        );
+      } catch (e) {
+        message(e.message);
+      }
+    }
+    async function refresh() {
+      await load();
+    }
+    $('load').onclick = () => load();
+    $('save').onclick = async () => {
+      try {
+        message(JSON.stringify(await api('editorial', JSON.parse($('payload').value))));
+        await refresh();
+      } catch (e) {
+        message(e.message);
+      }
+    };
+    $('export').onclick = async () => {
+      try {
+        message(JSON.stringify(await api('export', {})));
+      } catch (e) {
+        message(e.message);
+      }
+    };
+    document.querySelectorAll('[data-flag]').forEach(
+      (b) =>
+        (b.onclick = async () => {
+          try {
+            await api('flags', { name: b.dataset.flag, enabled: b.dataset.enabled === 'true' });
+            await refresh();
+          } catch (e) {
+            message(e.message);
+          }
+        }),
+    );
+    $('payload').value = JSON.stringify(
+      {
+        candidate: {
+          videoId: '',
+          title: 'Wird durch YouTube ersetzt',
+          channel: 'Wird durch YouTube ersetzt',
+          channelId: 'UC0000000000000000000000',
+          transcript: 'Vollständiger belegter Kontext',
+          contextSource: 'editorial',
+          sourceReference: 'Redaktionelle Sichtung mit Datum und Zeitbereich',
+          language: 'de',
+          evidence: {
+            quote: 'Wörtliche Aussage',
+            startSeconds: 0,
+            context: 'Kontext vor und nach der Aussage',
+          },
+        },
+      },
+      null,
+      2,
+    );
+  </script>
+</html>

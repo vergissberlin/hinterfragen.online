@@ -1,0 +1,44 @@
+---
+import '../styles/global.css';
+const name = import.meta.env.PUBLIC_OPERATOR_NAME;
+const address = import.meta.env.PUBLIC_OPERATOR_ADDRESS;
+const email = import.meta.env.PUBLIC_OPERATOR_EMAIL;
+const configured = name && address && email;
+---
+
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Impressum · hinterfragen.</title>
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body>
+    <main class="legal">
+      <a href="/">← Zurück</a>
+      <h1>Impressum</h1>
+      {configured ? (
+        <>
+          <h2>Verantwortlich für dieses Angebot</h2>
+          <p>{name}</p>
+          <p style="white-space:pre-line">{address}</p>
+          <p>
+            <a href={`mailto:${email}`}>{email}</a>
+          </p>
+        </>
+      ) : (
+        <>
+          <h2>Noch keine öffentliche Freigabe</h2>
+          <p>
+            Diese Installation ist eine technische Vorschau. Die Betreiberangaben sind noch nicht
+            hinterlegt. Sie darf so nicht öffentlich in Betrieb genommen werden.
+          </p>
+        </>
+      )}
+      <p>
+        Informationen zu Beitragsauswahl, Fragen und Agenten findest du unter{' '}
+        <a href="/transparenz">Transparenz</a>.
+      </p>
+    </main>
+  </body>
+</html>

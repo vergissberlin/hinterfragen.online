@@ -1,0 +1,15 @@
+node_modules
+dist
+.astro
+.env*
+.runtime
+tmp
+output
+public/downloads
+package-lock.json
+config/calibration.json
+config/corpus.json
+config/benchmark.json
+playwright-report
+test-results
+LICENSE
