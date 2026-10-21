@@ -4,7 +4,7 @@
 
 ## Lokal starten
 
-Node.js ab 22.12:
+Node.js ab 22.23.4:
 
 ```sh
 npm ci

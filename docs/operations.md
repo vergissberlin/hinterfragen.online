@@ -2,7 +2,7 @@
 
 ## Voraussetzungen und lokaler Start
 
-Docker mit Compose, freier lokaler Port 8080 und 3001, optional Cloudflare-Konto und YouTube-API-Schlüssel. Node.js ab 22.12 für Entwicklung. Für PostgreSQL mindestens ein dauerhaftes Volume und ein externes Backupziel vorsehen.
+Docker mit Compose, freier lokaler Port 8080 und 3001, optional Cloudflare-Konto und YouTube-API-Schlüssel. Node.js ab 22.23.4 für Entwicklung. Für PostgreSQL mindestens ein dauerhaftes Volume und ein externes Backupziel vorsehen.
 
 ```sh
 cp .env.example .env

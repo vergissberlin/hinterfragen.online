@@ -19,6 +19,8 @@ Stand: 21. Oktober 2026. Lokale Implementierung und technische Vorschau; keine p
 
 Reproduktion: `npm run check`, `npm test`, `npm run build`, `npm run test:posters` (Poppler erforderlich), `npm run test:e2e`. PostgreSQL-Tests verwenden `POSTGRES_TEST_URL`; sie legen isolierte Testschemas an und benötigen dafür Rechte. Niemals auf einer fremden Produktionsdatenbank ausführen.
 
+GitHub-CI wurde anschließend im Merge-PR gestartet. Für den Remote-Status sind die Checks am aktuellen PR-Head maßgeblich. Node.js ist auf die von Astro verlangte Mindestversion 22.23.4 festgeschrieben; der Agenten-Workflow bleibt bis zur Betriebsfreigabe deaktiviert.
+
 ## Vor öffentlichem Start noch erforderlich
 
 - Tatsächliche Betreiberangaben und Datenschutzprüfung für die konkrete Installation.
@@ -26,7 +28,6 @@ Reproduktion: `npm run check`, `npm test`, `npm run build`, `npm run test:poster
 - Echte YouTube-Zugänge, Quoten und Prüfung der API-/Analysebedingungen.
 - Modelllizenz und GGUF-Herkunft prüfen; echten kalten/warmen Benchmark auf dem vorgesehenen GitHub-Runner durchführen.
 - Mindestens 40 tatsächlich redaktionell bewertete deutsche Abnahmefälle. Diese wurden nicht erfunden oder durch Unit-Test-Fixtures ersetzt. Bis dahin bleibt automatische Veröffentlichung gesperrt.
-- GitHub-Actions-Läufe im Zielrepository tatsächlich ausführen. Workflows sind implementiert, aber aus diesem lokalen Arbeitslauf nicht remote gestartet worden.
 - Reale Google-OAuth-Autorisierung, gegebenenfalls Google-Verifizierung und ein bewusst freigegebener Einzelkommentar auf einem geeigneten Testvideo. Es wurde kein echter Kommentar veröffentlicht.
 - Externen Browser-Agenten mit WebMCP prüfen; die native technische Schnittstelle ist bereits getestet, allgemeine Browserunterstützung wird nicht behauptet.
 - Physischer Testausdruck und Scan, externes Backup mit Wiederherstellungstest, externe Alarmierung für Ausfälle und leeren Katalog.
