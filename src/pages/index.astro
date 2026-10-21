@@ -1,0 +1,315 @@
+---
+import '../styles/global.css';
+import { topics } from '../lib/contracts';
+const demo = import.meta.env.PUBLIC_DEMO_MODE === 'true';
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Eine gute Frage kann etwas bewegen. Entdecke sachliche Frageimpulse und hinterfrage pauschale Aussagen."
+    />
+    <meta name="theme-color" content="#f8f7f2" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>hinterfragen. — Eine gute Frage kann etwas bewegen.</title>
+  </head>
+  <body data-demo={String(demo)}>
+    <a class="skip-link" href="#beitrag">
+      Zum Beitrag
+    </a>
+    <header class="site-header mx-auto flex items-center justify-between">
+      <a class="wordmark" href="/" aria-label="hinterfragen – Startseite">
+        hinterfragen<span>.</span>
+      </a>
+      <nav aria-label="Hauptnavigation" class="flex items-center gap-6">
+        <a href="#idee">Die Idee</a>
+        <a href="#weitertragen" class="nav-print">
+          Weitertragen <span aria-hidden="true">↗</span>
+        </a>
+      </nav>
+    </header>
+    <main>
+      <section class="hero mx-auto text-center">
+        <p class="eyebrow">
+          <span class="status-dot"></span> KLEINE FRAGEN. NEUE PERSPEKTIVEN.
+        </p>
+        <h1>
+          Man wird ja wohl noch
+          <br />
+          <em>fragen dürfen?</em>
+        </h1>
+        <p class="hero-copy">
+          Nicht jede Behauptung braucht ein Gegenargument.
+          <br class="desktop-break" /> Manchmal reicht eine gute Frage.
+        </p>
+      </section>
+      <section class="portal mx-auto" aria-label="Beiträge hinterfragen">
+        <div class="topic-row flex items-center justify-between gap-4">
+          <p class="eyebrow">DEIN NÄCHSTER DENKANSTOSS</p>
+          <button
+            id="filter-toggle"
+            class="filter-toggle"
+            aria-expanded="false"
+            aria-controls="filters"
+          >
+            Themen wählen <span aria-hidden="true">☷</span>
+          </button>
+        </div>
+        <fieldset id="filters" hidden>
+          <legend>Welche Themen interessieren dich?</legend>
+          <div class="flex flex-wrap gap-3">
+            {Object.entries(topics).map(([key, label]) => (
+              <label class="filter-option">
+                <input type="checkbox" value={key} checked />
+                {label}
+              </label>
+            ))}
+          </div>
+          <p>Nur auf diesem Gerät gespeichert. Alle abgewählt? Dann zeigen wir alle Themen.</p>
+        </fieldset>
+        <div id="catalog-notice" class="catalog-notice" hidden></div>
+        <article
+          id="beitrag"
+          class="post-card"
+          tabindex="0"
+          aria-label="Aktueller Beitrag"
+          aria-busy="true"
+        >
+          <div id="post-content" hidden>
+            <div class="card-top flex items-center justify-between">
+              <span id="post-topic" class="topic-badge"></span>
+              <span id="post-source" class="source-label"></span>
+            </div>
+            <div class="source-author">
+              <img
+                id="post-author-avatar"
+                src="/avatars/placeholder.svg"
+                width="44"
+                height="44"
+                alt=""
+                referrerpolicy="no-referrer"
+              />
+              <div>
+                <p id="post-author-label"></p>
+                <a id="post-author-name" target="_blank" rel="noopener noreferrer"></a>
+              </div>
+            </div>
+            <h2 id="post-title">
+              <a id="post-title-link" target="_blank" rel="noopener noreferrer"></a>
+            </h2>
+            <a
+              id="post-original"
+              class="post-original"
+              target="_blank"
+              rel="noopener noreferrer"
+              hidden
+            >
+              Originalbeitrag auf YouTube ansehen ↗
+            </a>
+            <p id="post-demo-source" class="demo-source" hidden>
+              Erfundenes Beispiel · Es gibt keinen Originalbeitrag.
+            </p>
+            <p id="post-summary" class="post-summary"></p>
+            <blockquote>
+              <span class="quote-mark" aria-hidden="true">
+                “
+              </span>
+              <p id="post-quote"></p>
+              <footer id="post-timestamp"></footer>
+            </blockquote>
+            <details class="context">
+              <summary>Aussage im Kontext</summary>
+              <p id="post-context"></p>
+              <p id="post-check"></p>
+            </details>
+            <div class="question-hint flex items-center gap-3">
+              <span class="hint-icon" aria-hidden="true">
+                ?
+              </span>
+              <p>
+                Du musst nicht die Antwort haben.
+                <br />
+                <strong>Eine ehrliche Frage ist ein Anfang.</strong>
+              </p>
+            </div>
+            <div class="card-actions flex gap-3">
+              <button id="next-post" class="button button-secondary">
+                <span aria-hidden="true">←</span> Weiter
+              </button>
+              <button id="ask-post" class="button button-primary">
+                Das hinterfrage ich <span aria-hidden="true">↗</span>
+              </button>
+            </div>
+            <p class="swipe-hint">Nach links weiter · Nach rechts hinterfragen</p>
+          </div>
+          <div id="empty-state" class="empty-state">
+            <span class="empty-icon" aria-hidden="true">
+              ?
+            </span>
+            <h2>Eine gute Frage braucht guten Kontext.</h2>
+            <p id="empty-message">Beiträge werden geladen …</p>
+            <button id="retry-catalog" class="button button-secondary" hidden>
+              Erneut versuchen
+            </button>
+          </div>
+        </article>
+        <section
+          id="question-panel"
+          class="question-panel"
+          hidden
+          aria-labelledby="question-heading"
+        >
+          <p class="eyebrow">BLEIB NEUGIERIG. BLEIB BEI DER SACHE.</p>
+          <h2 id="question-heading">Wie möchtest du nachfragen?</h2>
+          <p>Ein Impuls, kein Skript. Mach die Frage zu deiner eigenen.</p>
+          <div id="question-options" class="question-options"></div>
+          <label for="question-editor">Deine Frage</label>
+          <textarea id="question-editor" rows="3" maxlength="600"></textarea>
+          <div class="question-actions flex flex-wrap gap-3">
+            <button id="copy-question" class="button button-primary">
+              Frage kopieren
+            </button>
+            <button id="youtube-publish" class="button button-secondary" hidden>
+              Mit YouTube veröffentlichen
+            </button>
+            <a
+              id="original-link"
+              class="button button-secondary"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Auf YouTube öffnen ↗
+            </a>
+          </div>
+          <p id="demo-question-note" class="fine-print" hidden>
+            Erfundenes Beispiel: Es gibt keinen Originalbeitrag.
+          </p>
+          <p class="fine-print">
+            Frag nach der Aussage. Bleib respektvoll gegenüber dem Menschen. Du entscheidest selbst,
+            ob du kommentierst.
+          </p>
+        </section>
+        <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+        <div class="activity flex items-center justify-between gap-4">
+          <span>
+            <span class="activity-mark" aria-hidden="true">
+              ✳
+            </span>{' '}
+            <strong id="local-count">0</strong> Impulse auf diesem Gerät
+          </span>
+          <span>Ohne Login. Ohne Druck.</span>
+        </div>
+        <p id="global-stats" class="stats-note" hidden></p>
+      </section>
+      <section id="idee" class="idea-section mx-auto">
+        <div>
+          <p class="eyebrow">WENIGER SCHLAGABTAUSCH.</p>
+          <h2>
+            Mehr Neugier.
+            <br />
+            <em>Weniger Fronten.</em>
+          </h2>
+        </div>
+        <div class="idea-copy">
+          <p>
+            Gegenargumente prallen manchmal ab. Eine offene Frage kann Raum schaffen: für Zweifel,
+            für Nachdenken, für eine andere Perspektive.
+          </p>
+          <p>
+            Hier findest du Aussagen zu Demokratie, Frauen und Minderheiten – mit Kontext und
+            sachlichen Fragen. Du formulierst selbst und entscheidest, ob du dich einbringst.
+          </p>
+          <a href="/transparenz">
+            So wählen wir Beiträge aus <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+      <section id="weitertragen" class="print-section mx-auto">
+        <div class="print-symbol" aria-hidden="true">
+          ↗
+        </div>
+        <div>
+          <p class="eyebrow">GUTE FRAGEN DÜRFEN KREISE ZIEHEN.</p>
+          <h2>
+            Ein kleiner Anstoß.
+            <br />
+            Auch abseits des Bildschirms.
+          </h2>
+          <p>Ausdrucken, aufhängen, Neugier wecken.</p>
+          <div class="print-links flex flex-wrap gap-3">
+            <a href="/downloads/jetzt-hinterfragen-a4.pdf" download>
+              A4 · 6 Karten ↓
+            </a>
+            <a href="/downloads/jetzt-hinterfragen-a3.pdf" download>
+              A3 · Plakat ↓
+            </a>
+            <a href="/downloads/jetzt-hinterfragen-a2.pdf" download>
+              A2 · Plakat ↓
+            </a>
+          </div>
+        </div>
+      </section>
+      <section class="tokens-section mx-auto">
+        <p class="eyebrow">TOKENS GEGEN RECHTS</p>
+        <h2>Dein Agent. Deine Frage. Deine Entscheidung.</h2>
+        <p>
+          Browser-Agenten können Beiträge und Frageimpulse über WebMCP abrufen und einen Kommentar
+          vorbereiten. Du prüfst Text und Ziel vor der Veröffentlichung.
+        </p>
+        <p id="webmcp-status">
+          WebMCP wird in unterstützten Browsern automatisch angeboten. Kopieren funktioniert auch
+          ohne Agent.
+        </p>
+        <a href="/transparenz#agenten">Wie automatisiertes Kommentieren funktioniert ↗</a>
+      </section>
+    </main>
+    <dialog id="publish-dialog" aria-labelledby="publish-heading">
+      <h2 id="publish-heading">Diese Frage auf YouTube veröffentlichen?</h2>
+      <p id="publish-target"></p>
+      <blockquote id="publish-preview"></blockquote>
+      <p>
+        Du veröffentlichst unter deinem YouTube-Konto. Google verlangt dafür eine weitreichende
+        YouTube-Berechtigung. Tokens bleiben nur bis zum Schließen dieser Seite im Arbeitsspeicher.
+      </p>
+      <p id="publish-state" role="status"></p>
+      <div class="flex flex-wrap gap-3">
+        <button id="youtube-connect" class="button button-secondary">
+          YouTube verbinden
+        </button>
+        <button id="youtube-disconnect" class="button button-secondary" hidden>
+          Verbindung trennen
+        </button>
+        <button id="publish-approve" class="button button-primary" disabled>
+          Diesen Kommentar veröffentlichen
+        </button>
+        <button id="publish-cancel" class="button button-secondary">
+          Schließen
+        </button>
+      </div>
+    </dialog>
+    <footer class="site-footer mx-auto flex flex-wrap items-center justify-between gap-4">
+      <a class="wordmark small" href="/">
+        hinterfragen<span>.</span>
+      </a>
+      <p>Eine Frage kann ein Anfang sein.</p>
+      <nav aria-label="Rechtliches" class="flex gap-5">
+        <a href="/transparenz">Transparenz</a>
+        <a href="/datenschutz">Datenschutz</a>
+        <a href="/impressum">Impressum</a>
+      </nav>
+    </footer>
+    <noscript>
+      <p class="noscript">
+        Für die zufällige Beitragsauswahl brauchst du JavaScript. Die Idee, Transparenz und
+        Druckvorlagen sind auch ohne JavaScript zugänglich.
+      </p>
+    </noscript>
+    <script>
+      import '../lib/portal';
+    </script>
+  </body>
+</html>

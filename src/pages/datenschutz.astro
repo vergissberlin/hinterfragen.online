@@ -1,0 +1,85 @@
+---
+import '../styles/global.css';
+const email = import.meta.env.PUBLIC_OPERATOR_EMAIL;
+---
+
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Datenschutz · hinterfragen.</title>
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body>
+    <main class="legal">
+      <a href="/">← Zurück</a>
+      <h1>
+        Deine Neugier.
+        <br />
+        Deine Daten.
+      </h1>
+      <p>
+        Verantwortliche Stelle und Kontakt findest du im <a href="/impressum">Impressum</a>.{' '}
+        {email
+          ? `Datenschutzkontakt: ${email}`
+          : 'Diese Vorschau ist noch nicht für den öffentlichen Betrieb freigegeben.'}
+      </p>
+      <h2>Lokale Einstellungen</h2>
+      <p>
+        Themenfilter und dein Aktivitätszähler werden ausschließlich im lokalen Speicher deines
+        Browsers abgelegt. Du kannst sie durch Löschen der Websitedaten entfernen. Es gibt in V1
+        keine Portal-Nutzerkonten, Werbeprofile oder Fingerprints.
+      </p>
+      <h2>Betrieb und Klickzahlen</h2>
+      <p>
+        Für die Auslieferung und den Schutz der Plattform verarbeiten der Hostingbetreiber und der
+        vorgeschaltete Dienst Cloudflare technische Verbindungsdaten einschließlich IP-Adressen. Der
+        bereitgestellte Webserver speichert standardmäßig keine Zugriffsprotokolle. Cloudflare hat
+        eigene Sicherheits- und Protokolleinstellungen, die der Betreiber vor dem Livebetrieb prüfen
+        muss.
+      </p>
+      <p>
+        Beim Kopieren einer Frage oder Öffnen eines Originals wird die Beitrags-ID und die Art der
+        Aktion gesendet. Im Backend werden nur Tagesaggregate gespeichert. Zur groben Begrenzung
+        wiederholter Klicks wird kurzfristig ein mit wechselndem Schlüssel abgeleiteter IP-Wert im
+        Arbeitsspeicher verwendet; er wird nicht in der Datenbank gespeichert und ist keine
+        dauerhafte Besucherkennung.
+      </p>
+      <h2>Externe Inhalte und KI</h2>
+      <p>
+        YouTube-Videos und externe Schriftanbieter werden nicht automatisch eingebettet. Beim Öffnen
+        von YouTube gelten dessen Bedingungen und die{' '}
+        <a href="https://policies.google.com/privacy" rel="noopener noreferrer">
+          Google-Datenschutzerklärung
+        </a>
+        . Öffentliche YouTube-Daten und redaktioneller Kontext werden durch einen Agenten in GitHub
+        Actions mit einem dort ausgeführten Sprachmodell analysiert. Die Pipeline sendet diese
+        Inhalte nicht an eine externe KI-API. API-Quelldaten werden spätestens nach 30 Tagen
+        aktualisiert oder gelöscht; Rohinhalte werden nicht als öffentliche Build-Artefakte
+        gespeichert.
+      </p>
+      <p>
+        Beim ausgewählten Beitrag oder Kommentar zeigen wir Name und Profilbild des jeweiligen
+        Verfassers. Profilbilder werden serverseitig von YouTube geladen, begrenzt
+        zwischengespeichert und von unserer Plattform ausgeliefert. Beim Anzeigen der Karte geht
+        keine Bildanfrage von deinem Browser an Google.
+      </p>
+      <h2>Optionale YouTube-Verbindung</h2>
+      <p>
+        Nur wenn du diese Funktion bewusst öffnest und Google lädst, wird eine Verbindung zu Google
+        Identity Services aufgebaut. Nach deiner Autorisierung kann ein Kommentar unter deinem
+        YouTube-Konto gesendet werden. Zugangstokens verbleiben im Arbeitsspeicher dieser Seite und
+        werden nicht im lokalen Speicher oder im Portal-Backend abgelegt. Du kannst die Berechtigung
+        in deinem Google-Konto widerrufen.
+      </p>
+      <h2>Deine Rechte</h2>
+      <p>
+        Du kannst dich für Auskunft, Berichtigung, Löschung, Einschränkung oder Widerspruch an die
+        verantwortliche Stelle wenden. Außerdem kannst du dich bei der zuständigen
+        Datenschutzaufsicht beschweren. Die rechtlichen Grundlagen, Auftragsverarbeitungsverträge
+        und etwaige Drittlandübermittlungen muss der Betreiber passend zur tatsächlichen
+        Installation vor der öffentlichen Freigabe ergänzen und prüfen.
+      </p>
+    </main>
+  </body>
+</html>

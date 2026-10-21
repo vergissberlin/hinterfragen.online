@@ -1,0 +1,15 @@
+.git
+node_modules
+dist
+.astro
+.env
+.env.*
+.runtime
+tmp
+output
+coverage
+playwright-report
+test-results
+config/corpus.json
+config/calibration.json
+config/benchmark.json

@@ -1,0 +1,56 @@
+{
+  "name": "hinterfragen-online",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro dev --host 127.0.0.1",
+    "build": "tsx scripts/check-live.ts && npm run posters && astro build",
+    "preview": "astro preview --host 127.0.0.1",
+    "check": "astro check && tsc -p tsconfig.server.json --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "api": "tsx server/index.ts",
+    "worker": "tsx server/worker.ts",
+    "migrate": "tsx server/migrate.ts",
+    "posters": "tsx scripts/posters.ts",
+    "agent": "tsx scripts/agent.ts",
+    "calibrate": "tsx scripts/calibrate.ts",
+    "dev:demo": "PUBLIC_DEMO_MODE=true astro dev --host 127.0.0.1",
+    "benchmark": "tsx scripts/benchmark.ts",
+    "test:posters": "tsx scripts/verify-posters.ts"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "^11.2.1",
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/newsreader": "^5.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.4.2",
+    "fastify": "^5.12.7",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "@types/pngjs": "^6.0.5",
+    "@types/qrcode": "^1.5.6",
+    "jsqr": "^1.4.0",
+    "pg-mem": "^3.0.14",
+    "pngjs": "^7.0.0",
+    "prettier": "^3.9.10",
+    "prettier-plugin-astro": "^1.1.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5",
+    "webmcp-types": "^0.1.10"
+  }
+}
