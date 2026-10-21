@@ -1,0 +1,20 @@
+{
+  "name": "hinterfragen",
+  "interface": {
+    "displayName": "hinterfragen.online · Pilot"
+  },
+  "plugins": [
+    {
+      "name": "tokens-gegen-rechts",
+      "source": {
+        "source": "local",
+        "path": "./plugins/tokens-gegen-rechts"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

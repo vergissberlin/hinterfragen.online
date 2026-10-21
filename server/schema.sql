@@ -45,3 +45,29 @@ UPDATE candidates SET source_key='video:' || video_id WHERE source_key IS NULL;
 ALTER TABLE candidates ALTER COLUMN source_key SET NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS candidates_source_key ON candidates(source_key);
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS source_author jsonb;
+
+CREATE TABLE IF NOT EXISTS contribution_keys (
+  id uuid PRIMARY KEY,
+  label text NOT NULL,
+  key_hash text UNIQUE NOT NULL,
+  revoked_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS contribution_daily_quota (
+  key_id uuid NOT NULL REFERENCES contribution_keys(id),
+  day date NOT NULL,
+  count integer NOT NULL CHECK(count BETWEEN 1 AND 30),
+  PRIMARY KEY(key_id,day)
+);
+CREATE TABLE IF NOT EXISTS contributions (
+  id uuid PRIMARY KEY,
+  key_id uuid NOT NULL REFERENCES contribution_keys(id),
+  video_id varchar(11) NOT NULL,
+  body jsonb NOT NULL,
+  body_digest text NOT NULL,
+  status text NOT NULL DEFAULT 'review' CHECK(status IN ('review','rejected','adopted')),
+  review_note text,
+  candidate_id uuid REFERENCES candidates(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS contributions_created ON contributions(created_at);

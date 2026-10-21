@@ -52,17 +52,39 @@ const email = import.meta.env.PUBLIC_OPERATOR_EMAIL;
         <a href="https://policies.google.com/privacy" rel="noopener noreferrer">
           Google-Datenschutzerklärung
         </a>
-        . Öffentliche YouTube-Daten und redaktioneller Kontext werden durch einen Agenten in GitHub
-        Actions mit einem dort ausgeführten Sprachmodell analysiert. Die Pipeline sendet diese
-        Inhalte nicht an eine externe KI-API. API-Quelldaten werden spätestens nach 30 Tagen
-        aktualisiert oder gelöscht; Rohinhalte werden nicht als öffentliche Build-Artefakte
-        gespeichert.
+        . Im Codex-Pilot recherchieren Teilnehmende über ihren eigenen Codex-Zugang. Für die
+        Verarbeitung dort gelten die Einstellungen und Bedingungen ihres Anbieters. Die
+        Plugin-Werkzeuge rufen selbst keine Modell-API auf. Der frühere zentrale Analyse-Workflow
+        ist ausschließlich manuell startbar.
       </p>
       <p>
         Beim ausgewählten Beitrag oder Kommentar zeigen wir Name und Profilbild des jeweiligen
         Verfassers. Profilbilder werden serverseitig von YouTube geladen, begrenzt
         zwischengespeichert und von unserer Plattform ausgeliefert. Beim Anzeigen der Karte geht
         keine Bildanfrage von deinem Browser an Google.
+      </p>
+      <h2>Codex-Pilot und Einreichungen</h2>
+      <p>
+        Das Plugin speichert persönliche Optionen, Rechercheergebnisse und die Versandhistorie lokal
+        unter ~/.config/tokens-gegen-rechts/. Einreichungen sind standardmäßig aktiviert, werden vor
+        dem ersten Lauf erklärt und können abgeschaltet werden. Gesendet werden nur die vorgesehenen
+        öffentlichen Quellen, Video-ID, Titel, Zitat und Kontext, Analyse und Fragen sowie
+        Einreichungs-ID und Plugin-Version. Private Chats und Browser-Anmeldedaten werden nicht
+        eingereicht.
+      </p>
+      <p>
+        Einreichungen werden einem persönlichen Pilot-Schlüssel zugeordnet und spätestens nach 30
+        Tagen gelöscht. Für Zugang und Begrenzung speichern wir einen Schlüssel-Hash, ein
+        Pilot-Label, Widerrufsstatus und Tageszähler; das Label soll keine Klarnamen enthalten.
+        Zugangsschlüssel werden nicht im Klartext in der Datenbank gespeichert. Eine redaktionell
+        übernommene Fassung unterliegt anschließend den Aufbewahrungsregeln des Katalogs. Abschalten
+        der Einreichung löscht bereits übertragene Daten nicht rückwirkend.
+      </p>
+      <p>
+        Lokale Versandversuche bleiben zur Vermeidung doppelter Kommentare gespeichert,
+        einschließlich Video-ID, eigener Kanal-ID, Zeitpunkt, Text-Hash und beobachtetem Status. Das
+        Plugin überträgt diese Historie nicht an uns. Browsergesteuerte Veröffentlichungen erfolgen
+        im persönlich angemeldeten Konto.
       </p>
       <h2>Optionale YouTube-Verbindung</h2>
       <p>

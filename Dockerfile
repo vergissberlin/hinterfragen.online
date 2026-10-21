@@ -16,6 +16,8 @@ RUN npm run build
 
 FROM dependencies AS backend
 COPY server ./server
+COPY shared ./shared
+COPY scripts/contribution-keys.ts ./scripts/
 COPY src/lib ./src/lib
 COPY config ./config
 COPY tsconfig.json tsconfig.server.json ./

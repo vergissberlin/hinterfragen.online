@@ -91,6 +91,32 @@
   ><button id="apply-target">Ziel aus Link übernehmen</button>
   <textarea id="payload" rows="18" spellcheck="false"></textarea
   ><button id="save">Redaktionellen Kontext speichern</button>
+  <h2>Einreichungen aus dem Codex-Pilot</h2>
+  <p>
+    Ungeprüfte Recherche. Öffne die Originalquellen und prüfe Kontext, Aussage und Einordnung
+    selbst. Übernehmen erzeugt nur einen neuen Redaktionsentwurf. Bestehende Beiträge bleiben
+    erhalten.
+  </p>
+  <div id="contributions"></div>
+  <h3>Ausgewählte Einreichung prüfen</h3>
+  <p id="contribution-selected">Keine ausgewählt.</p>
+  <label
+    >Redaktioneller Kontext und Analyse<textarea
+      id="contribution-payload"
+      rows="18"
+      spellcheck="false"
+    ></textarea>
+  </label>
+  <p>
+    Fragen für die Kartenansicht auf höchstens 180 Zeichen und 16 Wörter kürzen. Öffentliches
+    Quellenmaterial nach eigener Prüfung als „editorial“ kennzeichnen, niemals als autorisiertes
+    Transkript.
+  </p>
+  <label
+    ><input id="contribution-verified" type="checkbox" style="width: auto" /> Ich habe
+    Originalquellen, vollständigen Aussagekontext und Einordnung selbst geprüft.</label
+  >
+  <button id="contribution-adopt">Als Redaktionsentwurf übernehmen</button>
   <h2>Kandidaten</h2>
   <div id="candidates"></div>
   <script>
@@ -115,6 +141,7 @@
       try {
         $('status').textContent = JSON.stringify(await api('status'), null, 2);
         rows = await api('candidates');
+        await loadContributions();
         $('candidates').replaceChildren(
           ...rows.map((row) => {
             const box = document.createElement('article'),
@@ -170,6 +197,97 @@
         message(e.message);
       }
     }
+    let selectedContribution;
+    async function loadContributions() {
+      const result = await api('contributions');
+      $('contributions').replaceChildren(
+        ...result.contributions.map((row) => {
+          const box = document.createElement('article'),
+            heading = document.createElement('h3'),
+            detail = document.createElement('p'),
+            content = document.createElement('pre');
+          heading.textContent = row.body.title;
+          detail.textContent = row.status + ' · ' + row.video_id + ' · ' + (row.review_note || '');
+          content.textContent = JSON.stringify(row.body, null, 2);
+          box.append(heading, detail, content);
+          for (const source of row.body.sources) {
+            const link = document.createElement('a');
+            link.href = source.url;
+            link.textContent = source.title;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            box.append(link, document.createElement('br'));
+          }
+          if (row.status === 'review') {
+            const review = document.createElement('button');
+            review.textContent = 'Prüfen';
+            review.onclick = () => {
+              selectedContribution = row.id;
+              $('contribution-selected').textContent =
+                row.id +
+                (row.body.contextComplete ? '' : ' · Kontext unvollständig: Übernahme gesperrt');
+              $('contribution-verified').checked = false;
+              $('contribution-payload').value = JSON.stringify(
+                {
+                  candidate: {
+                    videoId: row.video_id,
+                    title: row.body.title,
+                    channel: 'Wird gegen YouTube geprüft',
+                    channelId: 'UC0000000000000000000000',
+                    transcript: row.body.contextText,
+                    contextSource: 'editorial',
+                    sourceReference: row.body.sources
+                      .map((s) => s.url)
+                      .join(' ')
+                      .slice(0, 1000),
+                    language: 'de',
+                    evidence: row.body.evidence,
+                  },
+                  analysis: row.body.analysis,
+                },
+                null,
+                2,
+              );
+              $('contribution-payload').focus();
+            };
+            const reject = document.createElement('button');
+            reject.textContent = 'Ablehnen';
+            reject.onclick = async () => {
+              const note = prompt('Grund der Ablehnung:');
+              if (!note?.trim()) return;
+              try {
+                await api('contributions/reject', { id: row.id, note });
+                await refresh();
+              } catch (error) {
+                message(error.message);
+              }
+            };
+            box.append(review, reject);
+          }
+          return box;
+        }),
+      );
+    }
+    $('contribution-adopt').onclick = async () => {
+      if (!selectedContribution || !$('contribution-verified').checked) {
+        message('Einreichung auswählen und eigene Quellenprüfung bestätigen.');
+        return;
+      }
+      try {
+        const payload = JSON.parse($('contribution-payload').value);
+        const result = await api('contributions/adopt', {
+          id: selectedContribution,
+          contextVerified: true,
+          ...payload,
+        });
+        message(JSON.stringify(result));
+        selectedContribution = undefined;
+        $('contribution-verified').checked = false;
+        await refresh();
+      } catch (error) {
+        message(error.message);
+      }
+    };
     async function refresh() {
       await load();
     }

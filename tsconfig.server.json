@@ -1,6 +1,13 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["server/**/*.ts", "scripts/**/*.ts", "src/lib/**/*.ts", "tests/**/*.ts"],
+  "include": [
+    "server/**/*.ts",
+    "shared/**/*.ts",
+    "plugins/**/*.ts",
+    "scripts/**/*.ts",
+    "src/lib/**/*.ts",
+    "tests/**/*.ts"
+  ],
   "compilerOptions": {
     "target": "ES2023",
     "module": "NodeNext",

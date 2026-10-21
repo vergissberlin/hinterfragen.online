@@ -25,7 +25,7 @@ Für die rein lokale Vorschau `PUBLIC_DEMO_MODE=true` setzen und Webimage neu ba
 3. API-Schlüssel auf YouTube Data API beschränken. Cloudflare-Token nur mit Cache-Purge-Recht für die eigene Zone anlegen; `CLOUDFLARE_ZONE_ID` und `CLOUDFLARE_API_TOKEN` setzen.
 4. Cloudflare Tunnel anlegen. `CLOUDFLARE_TUNNEL_TOKEN` setzen und `docker compose --profile cloudflare up -d --build` starten. Keine öffentlichen Hostports oder direkte Origin-DNS-Einträge ergänzen.
 5. Öffentlichen Host `hinterfragen.online` auf `http://web:8080` routen. Kein öffentliches Routing der Backend- oder Datenbankadresse.
-6. Für GitHub Actions einen separaten Host einrichten, mit **Cloudflare Access Service-Auth** geschützt. Nur Pfade `/internal/discover`, `/internal/agent-batch` und `/internal/import` an `http://backend:3001` leiten, alle anderen Pfade mit 404 ablehnen. Niemals Admin-Token als GitHub-Secret verwenden.
+6. Optional nur für den älteren, manuell gestarteten Analyseweg: Für GitHub Actions einen separaten Host einrichten, mit **Cloudflare Access Service-Auth** geschützt. Nur Pfade `/internal/discover`, `/internal/agent-batch` und `/internal/import` an `http://backend:3001` leiten, alle anderen Pfade mit 404 ablehnen. Niemals Admin-Token als GitHub-Secret verwenden.
 7. Redaktion weiterhin per SSH-Portweiterleitung auf Loopback öffnen. Betriebsflags lassen sich in der Oberfläche setzen; Token bleibt im Tab.
 8. Cache Rules: HTML und statische Assets cachen; `/data/catalog.json` und `/data/stats.json` mit maximal 60 Sekunden Edge-TTL und Revalidierung. `/api/*`, `/internal/*`, `/data/runtime.json` sowie Fehlerantworten niemals cachen. Kein Always Online oder unbegrenztes stale serving für den Katalog.
 9. WAF Managed Rules, Rate Limits und Schutzprofil aktivieren. Zugriff ohne Tunnel muss scheitern; bei dynamischen Routen Bypassregeln vermeiden. Cloudflare-Plan und Schutzumfang vor Launch prüfen.
@@ -67,3 +67,9 @@ Wiederherstellung zunächst in einer isolierten Staginginstallation: leere Daten
 - Stoppen: `docker compose down` erhält Volumes. Niemals `down -v` verwenden, wenn Daten erhalten bleiben sollen.
 
 Ein DDoS-Test gegen fremde Systeme ist nicht Teil der Abnahme. Lokale Ausfallsimulationen ersetzen keine Zusicherung gegen volumetrische Angriffe.
+
+## Codex-Pilot statt zentraler Inferenz
+
+Der Codex-Prototyp benötigt keinen Betreiber-Modellschlüssel. Der ältere Analyse-Workflow hat keinen Cron-Trigger mehr. Das aktualisierte Backend migriert die separaten Pilot-Tabellen beim Start; der Wartungsworker bleibt für Ablaufdaten und Löschung nach 30 Tagen aktiv. Der Webserver veröffentlicht nur die exakte zusätzliche Route `/api/contributions`, keine internen Redaktionspfade.
+
+Persönliche Einreichungsschlüssel, Installation und Prüfablauf: [Codex-Plugin](codex-plugin.md). Vor Einladung von Teilnehmenden Backend und nginx aktualisieren; die Git-Installation des Plugins allein stellt keinen Server bereit. Die Live-Abnahme mit zweitem persönlichem Konto und vorgesehenem Testvideo bleibt ein eigener Schritt.

@@ -1,7 +1,5 @@
 name: Discover and analyse YouTube candidates
 on:
-  schedule:
-    - cron: '17 */6 * * *'
   workflow_dispatch:
 permissions:
   contents: read
