@@ -69,7 +69,7 @@ export const candidateSchema = z.object({
   channelId: z.string().regex(/^UC[\w-]{22}$/),
   target: targetSchema.optional(),
   transcript: text(120000),
-  contextSource: z.enum(['authorized_transcript', 'editorial']),
+  contextSource: z.enum(['authorized_transcript', 'editorial', 'verified_public_source']),
   sourceReference: text(1000),
   language: z.literal('de'),
   evidence: evidenceSchema,

@@ -10,8 +10,8 @@ flowchart LR
   Worker[Wartungsdienst] --> DB
   Worker --> Catalog
   Codex[Persönlicher Codex / Plugin] --> Local[Lokales MCP / Einstellungen]
-  Local --> Contributions[Einreichungs-API / persönliche Schlüssel]
-  Contributions --> Review[Redaktionelle Prüfung]
+  Local --> Contributions[Einreichungs-API / Google-Sitzung]
+  Contributions --> Review[Redaktion oder unabhängige KI-Prüfung]
   Review --> DB
   Codex --> PersonalBrowser[Persönlicher YouTube-Browser]
   Action[Optional manuell: GitHub Actions / llama.cpp] --> Import[Geschützter Import]
@@ -59,7 +59,7 @@ Die exakten Zod-Verträge stehen in `src/lib/contracts.ts`. Agententokens dürfe
 
 ## Phase 2
 
-`ProfilePreferences` reserviert Themen und `questionTone` (`factual`, `provocative`, `snarky`, `emotional`, `aggressive`). Standard `factual`; fehlende geprüfte Varianten haben einen expliziten sachlichen Ersatz. Keine Oberfläche, Nutzerkonten, Synchronisierung, nicht-sachliche Generierung oder Rangliste in V1. Die optionale YouTube-Autorisierung ist keine Portal-Identität.
+`ProfilePreferences` reserviert Themen und `questionTone` (`factual`, `provocative`, `snarky`, `emotional`, `aggressive`). Standard `factual`; fehlende geprüfte Varianten haben einen expliziten sachlichen Ersatz. Keine Profiloberfläche, Synchronisierung, nicht-sachliche Generierung oder Rangliste in V1. Die Google-Pilotanmeldung ist eine begrenzte Anwendungsidentität. Die optionale YouTube-Autorisierung ist keine Portal-Identität.
 
 ## Beitrags- und Kommentarziele
 
@@ -75,8 +75,8 @@ Fragevorschläge verwenden einfache Alltagssprache, genau eine Frage, höchstens
 
 ## Codex-Pilot
 
-Der Standardablauf nutzt persönliche Codex-Zugänge der Teilnehmenden. Der lokale STDIO-MCP-Server führt keine Modellaufrufe aus und hält Einstellungen, Recherche und Versandhistorie außerhalb des Plugin-Pakets. Er reicht Ergebnisse über `POST /api/contributions` ein, falls die Person die standardmäßig aktivierte Einreichung nicht abschaltet. Es gibt keine zentrale Analyse im Zeitplan.
+Der Standardablauf nutzt persönliche Codex-Zugänge der Teilnehmenden. Der lokale STDIO-MCP-Server führt keine Modellaufrufe aus und hält Einstellungen, Recherche und Versandhistorie außerhalb des Plugin-Pakets. Er reicht Ergebnisse über `POST /api/contributions` ein, falls die Person die standardmäßig aktivierte Einreichung nicht abschaltet. Die Erstellung erfolgt beim persönlichen Codex; eine separate, standardmäßig deaktivierte GitHub Action kann Einreichungen unabhängig nachprüfen.
 
-Einreichungen sind getrennt von Kandidaten und internen Agentenimporten. Ein persönlicher Schlüssel darf ausschließlich einreichen. PostgreSQL serialisiert neue Einreichungen, idempotente Wiederholungen und das Tageslimit pro Schlüssel. Nur die Redaktion kann vollständige, selbst geprüfte Quellen in einen neuen Entwurf übernehmen; vorhandene Kandidaten bleiben erhalten. Veröffentlichung im Katalog und persönliche YouTube-Kommentare sind unabhängige Aktionen.
+Einreichungen sind getrennt von Kandidaten und internen Agentenimporten. Eine persönliche Google-Anwendungssitzung darf einreichen und eigene Freigaben abfragen; sie erteilt keine Social-Media-Berechtigungen. PostgreSQL serialisiert neue Einreichungen, idempotente Wiederholungen und das Tageslimit pro Schlüssel. Die Redaktion kann vollständige, selbst geprüfte Quellen in einen neuen Entwurf übernehmen. Alternativ bestätigt eine kalibrierte KI-Prüfung unabhängig abgerufene Originalquellen; vorhandene Kandidaten bleiben erhalten. Katalog und Plugin benötigen beide zentrale Bestätigung. Das Plugin reserviert den Versand erst nach frischer Freigabe des exakten aktuellen Fragetextes. Details: [Anmeldung und Freigabe](auth-review.md).
 
 [Installation, vollständiger Vertrag, Einstellungen und Abnahme](codex-plugin.md).

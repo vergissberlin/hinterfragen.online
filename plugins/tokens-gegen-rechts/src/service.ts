@@ -3,9 +3,11 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
 import { z } from 'zod';
+import { GoogleLogin, sessionSchema } from './google-login.ts';
 import {
   contributionSchema,
   contributionReceiptSchema,
+  approvalSchema,
   channelIdSchema,
 } from '../../../shared/contributions.ts';
 
@@ -73,6 +75,7 @@ function parseVideo(input: string) {
   return id;
 }
 export class LocalService {
+  private login?: GoogleLogin;
   constructor(
     readonly directory = join(homedir(), '.config', 'tokens-gegen-rechts'),
     private readonly transport: typeof fetch = fetch,
@@ -227,6 +230,78 @@ export class LocalService {
       return { recorded: true, submissionId: research.submissionId };
     });
   }
+  async connect() {
+    await this.settings();
+    this.login ??= new GoogleLogin(this.origin, this.transport, (session, isCurrent) =>
+      this.locked(async () => {
+        if (!isCurrent()) throw new Error('Anmeldung abgebrochen.');
+        await this.write('session.json', session);
+      }),
+    );
+    return this.login.start();
+  }
+  async authStatus() {
+    await this.settings();
+    const session = await this.read('session.json', sessionSchema.nullable(), () => null);
+    return {
+      connected: !!session && Date.parse(session.expiresAt) > this.now(),
+      expiresAt: session?.expiresAt ?? null,
+      ...(this.login?.status() ?? {}),
+      serverVerified: false,
+    };
+  }
+  async disconnect() {
+    return this.locked(async () => {
+      await this.settings();
+      this.login?.close();
+      const session = await this.read('session.json', sessionSchema.nullable(), () => null);
+      let serverRevoked = !session;
+      if (session) {
+        try {
+          serverRevoked = (
+            await this.transport(this.origin + '/api/auth/logout', {
+              method: 'POST',
+              redirect: 'error',
+              headers: { Authorization: 'Bearer ' + session.accessToken },
+              signal: AbortSignal.timeout(10000),
+            })
+          ).ok;
+        } catch {
+          serverRevoked = false;
+        }
+      }
+      await rm(join(this.directory, 'session.json'), { force: true });
+      await rm(join(this.directory, 'submission-key'), { force: true });
+      return {
+        connected: false,
+        serverRevoked,
+        note: serverRevoked
+          ? 'Abgemeldet.'
+          : 'Lokal abgemeldet; serverseitiger Widerruf nicht bestätigt. Sitzung läuft spätestens nach 30 Tagen ab.',
+      };
+    });
+  }
+  private async submissionCredential() {
+    const session = await this.read('session.json', sessionSchema.nullable(), () => null);
+    if (session) {
+      if (Date.parse(session.expiresAt) <= this.now())
+        throw new Error('Anmeldung abgelaufen. Bitte mit Google neu verbinden.');
+      return session.accessToken;
+    }
+    // Compatibility for existing pilot installs only. New setup uses Google sign-in.
+    try {
+      const file = join(this.directory, 'submission-key'),
+        stat = await lstat(file);
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.mode & 0o077) throw new Error();
+      const key = (await readFile(file, 'utf8')).trim();
+      if (!/^tgr_[A-Za-z0-9_-]{43}$/.test(key)) throw new Error();
+      return key;
+    } catch {
+      throw new Error(
+        'Zum Einreichen mit Google verbinden (tgr_connect). Recherche bleibt lokal verfügbar.',
+      );
+    }
+  }
   async submit(raw: unknown) {
     const { runId, submissionId } = z
       .object({ runId: z.uuid(), submissionId: z.uuid() })
@@ -240,19 +315,7 @@ export class LocalService {
         run = state.runs.find((r) => r.id === runId);
       const result = run?.results.find((r) => r.submissionId === submissionId);
       if (!result) throw new Error('Recherche fehlt.');
-      // Read credential from a private file; no tool accepts or returns it.
-      const file = join(this.directory, 'submission-key');
-      let key: string;
-      try {
-        const stat = await lstat(file);
-        if (!stat.isFile() || stat.isSymbolicLink() || stat.mode & 0o077) throw new Error();
-        key = (await readFile(file, 'utf8')).trim();
-        if (!/^tgr_[A-Za-z0-9_-]{43}$/.test(key)) throw new Error();
-      } catch {
-        throw new Error(
-          'Persönlichen Einreichungsschlüssel lokal in submission-key mit Modus 600 hinterlegen. Recherche bleibt lokal verfügbar.',
-        );
-      }
+      const key = await this.submissionCredential();
       if (!(await this.settings()).submitResults) return { status: 'disabled', transmitted: false };
       const body = JSON.stringify(contributionSchema.parse(result));
       if (Buffer.byteLength(body) > 256 * 1024) throw new Error('Recherche überschreitet 256 KB.');
@@ -295,6 +358,41 @@ export class LocalService {
     if (!research) throw new Error('Recherche nicht gefunden.');
     return { research, contentIsUntrusted: true };
   }
+  private async fetchApproval(result: z.infer<typeof contributionSchema>) {
+    try {
+      const credential = await this.submissionCredential();
+      const response = await this.transport(this.origin + '/api/contributions/approval', {
+        method: 'POST',
+        redirect: 'error',
+        headers: { Authorization: 'Bearer ' + credential, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionId: result.submissionId }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) throw new Error();
+      const approval = approvalSchema.parse(await response.json());
+      if (
+        approval.approved &&
+        (approval.submissionId !== result.submissionId ||
+          approval.videoId !== result.videoId ||
+          approval.evidenceQuote !== result.evidence.quote ||
+          Date.parse(approval.expiresAt) <= this.now())
+      )
+        throw new Error();
+      return approval;
+    } catch {
+      throw new Error(
+        'Zentrale Freigabe nicht erreichbar oder Anmeldung fehlt. Nur Entwurf; nichts veröffentlichen.',
+      );
+    }
+  }
+  async getApproval(raw: unknown) {
+    const { runId, submissionId } = z
+      .object({ runId: z.uuid(), submissionId: z.uuid() })
+      .strict()
+      .parse(raw);
+    const { research } = await this.getResearch({ runId, submissionId });
+    return this.fetchApproval(research);
+  }
   async beginAttempt(raw: unknown) {
     const input = z
       .object({
@@ -329,8 +427,6 @@ export class LocalService {
         throw new Error(
           'Keine Veröffentlichung bei unvollständigem Kontext oder ungeeigneter Aussage.',
         );
-      if (!result.analysis.questions.includes(input.text))
-        throw new Error('Text stimmt nicht mit einer belegten Frage überein.');
       if (settings.publicationMode === 'approve' && !input.userApproved)
         throw new Error('Konkrete Freigabe für Text, Video und Konto erforderlich.');
       if (settings.publicationMode === 'autonomous' && !run.autonomousAuthorized)
@@ -339,6 +435,10 @@ export class LocalService {
         state.attempts.some((a) => a.channelId === input.channelId && a.videoId === result.videoId)
       )
         throw new Error('Bereits versuchter Kommentar. Kein automatischer Neuversand.');
+      const approval = await this.fetchApproval(result);
+      if (!approval.approved || !approval.questions.includes(input.text))
+        throw new Error('Dieser Beitrag und Text sind zentral nicht bestätigt. Nur Entwurf.');
+      if (run.expiresAt <= this.now()) throw new Error('Lauf inzwischen abgelaufen.');
       state.attempts.push({
         runId: run.id,
         videoId: result.videoId,
@@ -351,6 +451,8 @@ export class LocalService {
       await this.write('state.json', state);
       return {
         reserved: true,
+        approvalExpiresAt: approval.expiresAt,
+        reviewDigest: approval.reviewDigest,
         status: 'unknown',
         videoId: result.videoId,
         text: input.text,

@@ -10,15 +10,25 @@ try {
   if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
 }
 const [command, value, output] = process.argv.slice(2);
-if (!['issue', 'revoke'].includes(command ?? '') || !value || (command === 'issue' && !output)) {
-  console.error('issue <Pilot-Label> <neue-Schlüsseldatei> | revoke <Schlüssel-ID>');
+if (
+  !['issue', 'revoke', 'list'].includes(command ?? '') ||
+  (command !== 'list' && !value) ||
+  (command === 'issue' && !output)
+) {
+  console.error('issue <Pilot-Label> <neue-Schlüsseldatei> | revoke <Konto-ID> | list');
   process.exit(1);
 }
 const db = connect(z.string().min(1).parse(process.env.DATABASE_URL));
 try {
   await migrate(db);
-  if (command === 'issue') {
-    const issued = await issueContributionKey(db, value);
+  if (command === 'list') {
+    const result = await db.query(
+      `SELECT k.id,k.label,k.revoked_at,i.provider,i.subject FROM contribution_keys k
+       LEFT JOIN login_identities i ON i.key_id=k.id ORDER BY k.created_at`,
+    );
+    console.log(JSON.stringify(result.rows, null, 2));
+  } else if (command === 'issue') {
+    const issued = await issueContributionKey(db, value!);
     try {
       await writeFile(resolve(output!), issued.key + '\n', { flag: 'wx', mode: 0o600 });
     } catch (error) {

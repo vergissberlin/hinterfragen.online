@@ -26,7 +26,7 @@ npm run test:e2e
 - Anonyme Kartenansicht, Themenfilter, Swipe und Tastaturbedienung, Fragen in einfacher Sprache und lokaler Aktivitätszähler.
 - Direkter Original-Link sowie Name und Avatar des Beitragsautors oder des ausgewählten Kommentarautors; Antworten landen im passenden Thread.
 - PostgreSQL, interne Redaktion, begrenztes Klicktracking, statischer Katalog und Docker Compose.
-- Codex-Plugin für einen eingeladenen Pilot: persönliche Recherche, lokale Einstellungen und separate redaktionelle Einreichungen ohne Betreiber-Modellkontingent. Der ältere Llama-Agent ist nur manuell startbar.
+- Codex-Plugin für einen eingeladenen Pilot: Google-Anmeldung, persönliche Recherche, lokale Einstellungen und zentral bestätigte Einreichungen ohne Betreiber-Modellkontingent. Der ältere Llama-Agent ist nur manuell startbar.
 - A4 mit sechs QR-Karten sowie A3-/A2-Plakate.
 - **Tokens gegen Rechts:** experimentelles WebMCP für Browser-Agenten. Optionales Veröffentlichen eines einzelnen Kommentars über YouTube nach sichtbarer Prüfung und Autorisierung.
 
@@ -36,6 +36,8 @@ Profile, OAuth-Portal-Login, Bestenliste und fünf Tonalitäten sind **Phase 2**
 
 ## Dokumentation
 
+- [Google und unabhängige Qualitätsprüfung](docs/auth-review.md)
+- [Bedrohungsmodell](docs/threat-model.md)
 - [Codex-Plugin: Installation, Einstellungen und Pilotabnahme](docs/codex-plugin.md)
 
 - [Betrieb und Installation](docs/operations.md)

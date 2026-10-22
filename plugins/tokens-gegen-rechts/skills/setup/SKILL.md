@@ -1,6 +1,6 @@
 ---
 name: tgr-setup
-description: Richte das Codex-Plugin Tokens gegen Rechts für eingeladene Teilnehmende ein, einschließlich persönlicher Optionen und lokaler Einreichungsschlüssel.
+description: Richte das Codex-Plugin Tokens gegen Rechts für eingeladene Teilnehmende ein, einschließlich Google-Anmeldung und persönlicher Optionen.
 ---
 
 Lies `tgr_get_settings`. Erkläre vor dem ersten Lauf:
@@ -11,9 +11,9 @@ Lies `tgr_get_settings`. Erkläre vor dem ersten Lauf:
 
 Lass die Person diese Optionen wählen/bestätigen und speichere sie mit `tgr_update_settings`, einschließlich `onboardingComplete: true`. Erst dann kann ein Recherchelauf starten. Installation allein autorisiert keine Kommentare. Einrichten startet keinen Lauf.
 
-Schlüssel niemals im Chat erfragen, anzeigen oder auslesen. Eine sicher erhaltene Schlüsseldatei hinterlegt die Person selbst im lokalen Terminal:
-`node <installierter-Pluginpfad>/runtime/server.mjs --install-key /absoluter/pfad/pilot-key`
-Die Quelldatei muss privat sein (600). Das Ziel ist `~/.config/tokens-gegen-rechts/submission-key`. Ein bestehender Schlüssel wird nicht überschrieben. Kein Schlüssel nötig für lokale Recherche mit deaktivierter Einreichung. Fehlender Schlüssel verhindert nur die Übertragung.
+Für Einreichungen `tgr_connect` nach persönlichem Verbindungsauftrag aufrufen. Das öffnet die Anmeldung im normalen Browser. Die Person meldet sich selbst bei Google an; niemals Passwörter, Bestätigungscodes, Cookies, Client-Secrets oder Sitzungstokens erfragen/ausgeben. Anschließend `tgr_get_auth_status` aufrufen. Dieser zeigt nur lokale Gültigkeit, keine unabhängige serverseitige Bestätigung. Die App-Anmeldung erteilt ausschließlich Einreichungszugang, keine Social-Media-Berechtigungen. Bei nicht freigeschaltetem Pilotkonto oder noch nicht eingerichtetem Google-Client bleibt lokale Recherche möglich. Abmelden mit `tgr_disconnect`.
+
+Vor dem ersten Lauf erklären: Auch ein autonomer Modus darf ausschließlich zentral durch unabhängige KI-Prüfung oder Redaktion bestätigte Beiträge und exakte Fragen veröffentlichen. Einreichung ist noch keine Bestätigung. Ohne Bestätigung, bei Rücknahme oder nicht erreichbarer Freigabe nur Entwürfe. Wer Einreichen abschaltet, kann neue private Recherche nicht zur zentralen Prüfung geben und deshalb daraus nicht direkt über das Plugin veröffentlichen.
 
 Browsersteuerung wird vom Host bereitgestellt. Prüfe ihre Verfügbarkeit und erkläre gegebenenfalls die Einrichtung des persönlich angemeldeten Browsers; fordere keine Cookies oder Zugangstokens an. Ohne Browser funktioniert die Recherche mit zugänglichen Webquellen und der Entwurfsmodus. Behaupte keine erfolgreiche Videoanalyse ohne zugänglichen Originalkontext.
 

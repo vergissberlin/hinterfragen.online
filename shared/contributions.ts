@@ -47,7 +47,7 @@ export const contributionSchema = z
     contextText: z.string().trim().min(1).max(120000),
     contextComplete: z.boolean(),
     analysis: contributionAnalysisSchema,
-    pluginVersion: z.literal('0.1.0'),
+    pluginVersion: z.enum(['0.1.0', '0.2.0']),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -75,3 +75,18 @@ export const contributionReceiptSchema = z
     duplicate: z.boolean(),
   })
   .strict();
+
+export const approvalSchema = z.discriminatedUnion('approved', [
+  z.object({ approved: z.literal(false), reason: z.string() }).strict(),
+  z
+    .object({
+      approved: z.literal(true),
+      submissionId: z.uuid(),
+      videoId: videoIdSchema,
+      evidenceQuote: z.string().min(1).max(600),
+      questions: z.array(z.string().min(1).max(350)).length(3),
+      expiresAt: z.iso.datetime(),
+      reviewDigest: z.string().regex(/^[a-f0-9]{64}$/),
+    })
+    .strict(),
+]);

@@ -28,7 +28,12 @@ await verifyModel(model);
 const cases = [];
 for (const test of corpus.cases) {
   try {
-    const analysis = await analyze(test.candidate, test.comments, binary, model);
+    const analysis = await analyze(
+      test.candidate,
+      process.env.CALIBRATION_KIND === 'contributions' ? [] : test.comments,
+      binary,
+      model,
+    );
     cases.push({
       id: test.id,
       expected: test.expected,
@@ -50,18 +55,22 @@ for (const test of corpus.cases) {
 const benchmark = JSON.parse(
   await readFile(process.env.BENCHMARK_PATH ?? 'config/benchmark.json', 'utf8'),
 );
+const evaluatedDigest =
+  process.env.CALIBRATION_KIND === 'contributions'
+    ? (await import('./review-digest.ts')).reviewDigest
+    : promptDigest;
 const report = {
   source: corpus.source,
   reviewedBy: corpus.reviewedBy,
   reviewedAt: corpus.reviewedAt,
   corpusDigest: digest(corpus),
   modelDigest: agentConfig.model.sha256,
-  promptDigest,
+  promptDigest: evaluatedDigest,
   cases,
   benchmark,
 };
 await mkdir('.runtime', { recursive: true });
-const passed = calibrationPasses(report, agentConfig.model.sha256, promptDigest);
+const passed = calibrationPasses(report, agentConfig.model.sha256, evaluatedDigest);
 await writeFile('.runtime/calibration-result.json', JSON.stringify(report, null, 2));
 console.log(JSON.stringify({ passed, cases: cases.length }));
 if (!passed) process.exitCode = 1;

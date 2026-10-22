@@ -43,7 +43,7 @@ Schema und Schnittstellen: [Architektur](architecture.md). Veröffentlichungen s
 - In der Redaktion „Angriffsmodus an“ aktivieren. Tracking und Agentenübernahme pausieren; neue Veröffentlichungen sind gesperrt. Die kurzlebige Kommentierfreigabe wird deaktiviert. Statische Seite, Original-Links und PDFs bleiben verfügbar.
 - Optional zusätzlich dynamische Routen am Cloudflare-Edge sperren. Bei vollständigem API-Ausfall sind statische Inhalte weiter auslieferbar; direkte API-Kommentare benötigen vor jedem Versand zusätzlich eine aktuelle Backend-Freigabe und stoppen bei einem API-Ausfall sofort.
 - Einzelnen Beitrag mit „Zurückziehen“ entfernen. Erfolg umfasst lokalen Export und CDN-Invalidierung. Bei Fehlermeldung CDN-Zugang prüfen und „Katalog / CDN erneut aktualisieren“ betätigen; der Worker wiederholt den Export.
-- Für spätere Portal-Logins denselben frühen Abschaltmechanismus verwenden. In V1 gibt es keinen solchen Login-Endpunkt.
+- Der Angriffsmodus sperrt auch Einreichungen und Plugin-Freigaben. Bereits in fremden Browsern laufende oder manipulierte Agenten lassen sich dadurch nicht fernsteuern.
 
 ## Backups und Wiederherstellung
 
@@ -70,6 +70,6 @@ Ein DDoS-Test gegen fremde Systeme ist nicht Teil der Abnahme. Lokale Ausfallsim
 
 ## Codex-Pilot statt zentraler Inferenz
 
-Der Codex-Prototyp benötigt keinen Betreiber-Modellschlüssel. Der ältere Analyse-Workflow hat keinen Cron-Trigger mehr. Das aktualisierte Backend migriert die separaten Pilot-Tabellen beim Start; der Wartungsworker bleibt für Ablaufdaten und Löschung nach 30 Tagen aktiv. Der Webserver veröffentlicht nur die exakte zusätzliche Route `/api/contributions`, keine internen Redaktionspfade.
+Der Codex-Prototyp benötigt keinen Betreiber-Modellschlüssel. Der ältere Analyse-Workflow hat keinen Cron-Trigger mehr. Das aktualisierte Backend migriert die separaten Pilot-Tabellen beim Start; der Wartungsworker bleibt für Ablaufdaten und Löschung nach 30 Tagen aktiv. Der Webserver veröffentlicht die begrenzten Auth-Routen sowie `/api/contributions` und `/api/contributions/approval`, keine internen Redaktionspfade.
 
-Persönliche Einreichungsschlüssel, Installation und Prüfablauf: [Codex-Plugin](codex-plugin.md). Vor Einladung von Teilnehmenden Backend und nginx aktualisieren; die Git-Installation des Plugins allein stellt keinen Server bereit. Die Live-Abnahme mit zweitem persönlichem Konto und vorgesehenem Testvideo bleibt ein eigener Schritt.
+Google-Anmeldung und unabhängige Prüf-Action: [Einrichtung](auth-review.md). Legacy-Schlüssel sind nur für bestehende Pilotinstallationen vorgesehen. Installation und Prüfablauf: [Codex-Plugin](codex-plugin.md). Vor Einladung von Teilnehmenden Backend und nginx aktualisieren; die Git-Installation des Plugins allein stellt keinen Server bereit. Die Live-Abnahme mit zweitem persönlichem Konto und vorgesehenem Testvideo bleibt ein eigener Schritt.

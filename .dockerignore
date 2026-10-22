@@ -13,3 +13,5 @@ test-results
 config/corpus.json
 config/calibration.json
 config/benchmark.json
+
+config/contribution-calibration.json

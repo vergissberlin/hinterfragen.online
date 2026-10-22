@@ -1,4 +1,4 @@
-# Tokens gegen Rechts · Codex-Pilot
+# Tokens gegen Rechts · Codex-Pilot 0.2
 
 Du recherchierst mit deinem persönlichen Codex-Zugang und dessen Kontingent. Es wird kein Token-Guthaben an den Betreiber übertragen. Das Plugin und das Backend führen für diesen Ablauf keine Modellaufrufe aus. Hosting, Datenbank und YouTube-Metadatenabfragen bleiben Betreiberaufgaben.
 
@@ -9,7 +9,7 @@ Voraussetzungen: Codex Desktop, persönlicher Codex-Zugang, lokal Node.js ab 22.
 Nach Veröffentlichung des Plugin-Commits im Repository:
 
 ```sh
-codex plugin marketplace add vergissberlin/hinterfragen.online --ref feat/codex-contributor-plugin
+codex plugin marketplace add vergissberlin/hinterfragen.online --ref feat/google-plugin-login
 codex plugin add tokens-gegen-rechts@hinterfragen
 ```
 
@@ -24,18 +24,13 @@ Im Chat `$tgr-setup` aufrufen. Das Einrichten erklärt Datenübertragung, persö
 
 Automatisches Auswählen des Skills ersetzt keinen persönlichen Startauftrag und keine Kommentarfreigabe.
 
-### Persönlichen Einreichungsschlüssel hinterlegen
+### Mit Google verbinden
 
-Der Betreiber übergibt eine private Schlüsseldatei separat. **Keine Schlüssel im Chat einfügen.** Im eigenen lokalen Terminal:
+Im Setup `tgr_connect` beauftragen. Der normale Browser öffnet Google; die Person meldet sich selbst an. Danach `tgr_get_auth_status` prüfen. Dieser meldet lokale Gültigkeit, keine unabhängige serverseitige Bestätigung. Passwörter, Bestätigungscodes oder Sitzungstokens niemals in den Chat kopieren. `tgr_disconnect` meldet diese Installation ab und widerruft ihre Sitzung.
 
-```sh
-chmod 600 /absoluter/pfad/pilot-key
-node /absoluter/installierter/pluginpfad/runtime/server.mjs --install-key /absoluter/pfad/pilot-key
-```
+Die App-Anmeldung verlangt nur OpenID/Email und erteilt keine Veröffentlichungsrechte für YouTube oder andere Social-Media-Plattformen. Google-Tokens werden nicht persistiert. Eine eigene Anwendungssitzung läuft nach 30 Tagen ab; erneute Anmeldung erhält dasselbe Konto/Tageslimit. Alte Pilot-Schlüssel bleiben als Übergang kompatibel; neue Nutzer:innen benötigen keine Schlüsseldatei.
 
-Der Installationspfad wird von `codex plugin add --json` ausgegeben. Der Schlüssel liegt danach in `~/.config/tokens-gegen-rechts/submission-key`. Bestehende Dateien werden nicht überschrieben. Für einen Schlüsselwechsel alle Plugin-Prozesse beenden und die alte lokale Schlüsseldatei entfernen; erst dann neu installieren. Der Betreiber widerruft den alten Schlüssel separat.
-
-Fehlender oder widerrufener Schlüssel blockiert nur die Einreichung. Recherche und Entwurf bleiben verfügbar. Vor dem ersten öffentlichen Pilotbetrieb muss https://hinterfragen.online mit dem aktualisierten Backend erreichbar sein.
+Für den Livebetrieb muss der Betreiber Google-Client, Callback und Pilotkonten einrichten: [Google und unabhängige Prüfung](auth-review.md).
 
 ## Optionen und Grenzen
 
@@ -49,11 +44,13 @@ Fehlender oder widerrufener Schlüssel blockiert nur die Einreichung. Recherche 
 
 `$tgr-settings` speichert Optionen lokal, unabhängig von Plugin-Updates. Das Einreichen wird unmittelbar vor dem Versand erneut geprüft. Ein Wechsel im laufenden Rechercheauftrag gilt für folgende Einreichungen. Bereits begonnene Übertragungen können nicht zurückgenommen werden; lokale Schreiboperationen werden zwischen Prozessen serialisiert. Einreichungen werden 30 Tage aufbewahrt. Die Behauptung „öffentliche Quelle“ muss redaktionell geprüft werden; der URL-Vertrag allein kann öffentliche Zugänglichkeit nicht beweisen.
 
+**Zentrale Bestätigung ist in jedem Veröffentlichungsmodus erforderlich.** `tgr_get_approval` liefert nur bestätigte Fragen der eigenen Einreichung; `tgr_begin_publication` prüft Video, Beleg und exakten Text unmittelbar erneut. Lokale Modellflags reichen nicht. Ungeprüft, widerrufen, abgelaufen, pausiert oder Dienst nicht erreichbar: nur Entwurf. Bei abgeschaltetem Einreichen bleiben neue Recherchen privat und können nicht zentral freigegeben werden. Redaktionell geänderte Fragen erneut zeigen und konkret freigeben lassen. Die Reservierung gilt höchstens 30 Sekunden; danach nicht mehr senden.
+
 Der autonome Modus benötigt explizite Aktivierung **und** einen direkten Auftrag für den aktuellen Lauf. „Installieren“ oder „Option aktivieren“ startet keinen Lauf. Kein Dauerbetrieb, keine automatischen Antworten in Kommentarsträngen. Maximal ein Versuch je Video und eigenem Kanal; auch Fehler geben keinen weiteren Versuch frei. Ohne ausreichend belegten Kontext keine automatische Veröffentlichung.
 
 Vor dem Browserklick reserviert `tgr_begin_publication` dauerhaft einen Sendeversuch. Es sendet selbst nichts. Die tatsächliche Browseraktion folgt dem Recherche-Skill und den Hostfreigaben. Die im Tool gemeldeten Zustimmungen und Beobachtungen stammen vom Agenten; der lokale Server kann eine menschliche Freigabe oder die Browseridentität nicht unabhängig attestieren. Ein Plugin darf diese Hostgrenze nicht umgehen. Bei CAPTCHA, Kontoänderung oder unbekanntem Versandstatus stoppen. `accepted` bedeutet YouTube-Annahme, nicht allgemeine Sichtbarkeit.
 
-Lokale Dateien: `settings.json`, `state.json` (bis zu 100 Läufe mit Ergebnissen; ältester abgelaufener Lauf wird bei Bedarf entfernt), `submission-key` und vorübergehend `.lock`. Ordnerrechte 700, Dateirechte 600; keine Symlinks. Die kompakte Versandhistorie bleibt dauerhaft. Bei beschädigter Konfiguration sind Einreichung und Veröffentlichung gesperrt. Lokaler Reset nach Beenden der Plugin-Prozesse:
+Lokale Dateien: `settings.json`, `state.json` (bis zu 100 Läufe mit Ergebnissen; ältester abgelaufener Lauf wird bei Bedarf entfernt), `session.json`, optional alte `submission-key` und vorübergehend `.lock`. Ordnerrechte 700, Dateirechte 600; keine Symlinks. Die kompakte Versandhistorie bleibt dauerhaft. Bei beschädigter Konfiguration sind Einreichung und Veröffentlichung gesperrt. Lokaler Reset nach Beenden der Plugin-Prozesse:
 
 ```sh
 node /absoluter/installierter/pluginpfad/runtime/server.mjs --reset-settings
@@ -63,11 +60,12 @@ Der Reset erhält Versandhistorie und Schlüssel und verlangt erneute Einrichtun
 
 ## Betrieb, Schnittstellen und Redaktion
 
-Migrationen laufen beim Backendstart. Für lokale Befehle Node.js ab 22.23.4 und `DATABASE_URL` konfigurieren. Der Betreiber erzeugt und widerruft Schlüssel ohne Modellkontingent:
+Migrationen laufen beim Backendstart. Für lokale Befehle Node.js ab 22.23.4 und `DATABASE_URL` konfigurieren. Der Betreiber kann alte Schlüssel weiter erzeugen und stabile Pilot-Konten widerrufen (neues Onboarding nutzt Google):
 
 ```sh
 npm run contribution:keys -- issue pilot-01 /sicherer/pfad/pilot-01.key
-npm run contribution:keys -- revoke SCHLUESSEL_UUID
+npm run contribution:keys -- list
+npm run contribution:keys -- revoke KONTO_UUID
 ```
 
 `issue` schreibt ausschließlich in eine neue Datei mit Modus 600 und zeigt nur die Schlüssel-ID. CLI-Label pseudonym halten. Im Backend-Container steht derselbe Befehl bereit; Ziel in ein privates, beschreibbares Verzeichnis wie `/tmp` legen und sicher abholen. Schlüssel nicht ins Repository committen.
@@ -81,11 +79,11 @@ npm run contribution:keys -- revoke SCHLUESSEL_UUID
 
 Öffentlicher Vertrag: `shared/contributions.ts`, Version 1. Maximal 256 KiB pro Anfrage und 30 neue Einreichungen je Schlüssel/UTC-Tag. PostgreSQL serialisiert persönliche Quota und Wiederholungen. Dieselbe ID mit identischem Inhalt liefert ihren bisherigen Status; anderer Inhalt oder fremde ID liefert 409. Fehlender/widerrufener Schlüssel: 401; ungültiger Inhalt: 400; zu groß: 413; Limit: 429; Angriffsmodus: 503. Kein automatischer Retry. Persönliche Schlüssel erlauben keinen Zugriff auf interne Agent- oder Adminrouten.
 
-Das nginx-Routing reicht nur die neue exakte öffentliche Route samt Authorization weiter; `/internal/` bleibt öffentlich gesperrt. Die Tabellen `contributions`, `contribution_keys` und `contribution_daily_quota` werden separat geführt. Der Wartungsworker löscht Einreichungen nach 30 Tagen und alte Tageszähler. Schlüssel-Hashes bleiben für Widerruf und Zugang erhalten.
+Das nginx-Routing reicht nur die begrenzten Auth-, Einreichungs- und Freigaberouten samt Authorization weiter; `/internal/` bleibt öffentlich gesperrt. Die Tabellen `contributions`, `contribution_keys` und `contribution_daily_quota` werden separat geführt. Der Wartungsworker löscht Einreichungen nach 30 Tagen und alte Tageszähler. Schlüssel-Hashes bleiben für Widerruf und Zugang erhalten.
 
 In der Redaktion **Einreichungen → Prüfen** wählen, Originalquellen öffnen und Kontext/Einordnung selbst prüfen. Unvollständige Einreichungen sind nicht übernehmbar. Die Kartenansicht verlangt kürzere Fragen (180 Zeichen/16 Wörter); vor Übernahme redaktionell kürzen. Das Material nach eigener Prüfung als `editorial` führen, niemals als vermeintlich autorisiertes Transkript. Übernahme prüft die YouTube-Verfügbarkeit und erzeugt ausschließlich einen neuen Kandidaten im Status review. Bestehende Kandidaten werden nicht überschrieben. Die Veröffentlichung im Katalog bleibt ein separater Redaktionsschritt mit bestehenden Sperren und Inhaltsprüfungen.
 
-Der ältere Llama-Workflow hat keinen Zeitplan mehr und ist nur manuell mit bisherigen Opt-ins nutzbar. Der Wartungsworker bleibt aktiv.
+Der ältere Discovery-Workflow bleibt manuell. Eine separate, ausdrücklich aktivierte GitHub-Action prüft Einreichungen mit unabhängig abgerufenen Transkriptquellen und kalibriertem lokalem Modell. Ohne unabhängigen Originalbeleg bleibt die Einreichung redaktionell zu prüfen. [Konfiguration und Grenzen](auth-review.md). Der Wartungsworker bleibt aktiv.
 
 ## Entwicklung, Tests und Freigabe
 
@@ -111,3 +109,5 @@ Vor Pilotfreigabe separat abhaken:
 Diese persönlichen Live-Schritte werden durch automatisierte Tests nicht als bestanden ausgewiesen.
 
 Referenzen: [Plugin-Paketierung](https://developers.openai.com/plugins/build/plugins), [Browsersteuerung](https://learn.chatgpt.com/docs/browser), [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk).
+
+Sicherheitsgrenzen und denkbare Störungen: [Bedrohungsmodell](threat-model.md).

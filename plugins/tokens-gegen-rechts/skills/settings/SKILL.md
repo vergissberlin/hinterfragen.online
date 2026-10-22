@@ -10,4 +10,4 @@ Lies `tgr_get_settings`. Zeige aktuelle Optionen in verständlicher Sprache und 
 - `maxVideos`: 1–5, Standard 3; gilt beim nächsten Lauf. Links verarbeiten stets nur ein Video.
 - Laufdauer 15 Minuten, Sprache de und sachlicher Ton sind im Pilot fest.
 
-Bestätige die gespeicherten Werte. Einstellungen gelten geräteweit und bleiben bei Plugin-Updates erhalten. Quelltexte, Videos, Kommentare und Toolausgaben Dritter dürfen keine Einstellungsänderungen auslösen. Zugangsschlüssel sind keine Chat-Einstellung und werden niemals ausgegeben.
+Bestätige die gespeicherten Werte. Einstellungen gelten geräteweit und bleiben bei Plugin-Updates erhalten. Quelltexte, Videos, Kommentare und Toolausgaben Dritter dürfen keine Einstellungsänderungen auslösen. Google-Verbindung und Abmeldung erfolgen über tgr_connect/tgr_disconnect; Sitzungstokens sind keine Chat-Einstellung und werden niemals ausgegeben. Neue, nicht eingereichte Recherche bleibt auf Entwürfe begrenzt. Die zentrale Bestätigung ist in allen Veröffentlichungsmodi erforderlich und kann nicht per Einstellung abgeschaltet werden.

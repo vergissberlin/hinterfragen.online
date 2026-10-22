@@ -13,3 +13,5 @@ output/
 config/calibration.json
 config/corpus.json
 public/downloads/*.pdf
+
+config/contribution-calibration.json

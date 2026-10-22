@@ -71,3 +71,39 @@ CREATE TABLE IF NOT EXISTS contributions (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS contributions_created ON contributions(created_at);
+
+-- Application sign-in identities are separate from social publication accounts.
+CREATE TABLE IF NOT EXISTS login_identities (
+  provider text NOT NULL,
+  subject text NOT NULL,
+  key_id uuid NOT NULL REFERENCES contribution_keys(id),
+  PRIMARY KEY(provider,subject)
+);
+CREATE TABLE IF NOT EXISTS login_sessions (
+  token_hash text PRIMARY KEY,
+  key_id uuid NOT NULL REFERENCES contribution_keys(id),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS login_flows (
+  id uuid PRIMARY KEY,
+  state_hash text UNIQUE NOT NULL,
+  browser_hash text NOT NULL,
+  nonce text NOT NULL,
+  google_verifier text,
+  redirect_uri text NOT NULL,
+  client_state text NOT NULL,
+  challenge text NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  code_hash text UNIQUE,
+  key_id uuid REFERENCES contribution_keys(id),
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS login_flows_expiry ON login_flows(expires_at);
+CREATE INDEX IF NOT EXISTS login_sessions_expiry ON login_sessions(expires_at);
+
+ALTER TABLE contributions ADD COLUMN IF NOT EXISTS ai_checked_at timestamptz;
+ALTER TABLE contributions ADD COLUMN IF NOT EXISTS ai_reason text;
+ALTER TABLE contributions ADD COLUMN IF NOT EXISTS review_provenance jsonb;
+-- All adoptions before this migration were exclusively manual/editorial.
+UPDATE contributions SET review_provenance='{"kind":"editorial"}'::jsonb WHERE status='adopted' AND review_provenance IS NULL;

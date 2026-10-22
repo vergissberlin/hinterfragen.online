@@ -24,7 +24,7 @@ it('startet das ausgelieferte Paket ohne Repository, node_modules oder Modellsch
   try {
     await client.connect(transport);
     const tools = await client.listTools();
-    expect(tools.tools).toHaveLength(9);
+    expect(tools.tools).toHaveLength(13);
     const settings = await client.callTool({ name: 'tgr_get_settings', arguments: {} });
     expect(settings.isError).not.toBe(true);
     expect(settings.structuredContent).toMatchObject({
