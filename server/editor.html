@@ -207,7 +207,13 @@
             detail = document.createElement('p'),
             content = document.createElement('pre');
           heading.textContent = row.body.title;
-          detail.textContent = row.status + ' · ' + row.video_id + ' · ' + (row.review_note || '');
+          detail.textContent =
+            row.status +
+            ' · ' +
+            row.video_id +
+            ' · ' +
+            (row.review_note || '') +
+            (row.ai_reason ? ' · KI-Prüfung: ' + row.ai_reason : '');
           content.textContent = JSON.stringify(row.body, null, 2);
           box.append(heading, detail, content);
           for (const source of row.body.sources) {
@@ -262,7 +268,17 @@
                 message(error.message);
               }
             };
-            box.append(review, reject);
+            const retry = document.createElement('button');
+            retry.textContent = 'KI-Prüfung erneut anfragen';
+            retry.onclick = async () => {
+              try {
+                message(JSON.stringify(await api('contributions/retry', { id: row.id })));
+                await refresh();
+              } catch (error) {
+                message(error.message);
+              }
+            };
+            box.append(review, reject, retry);
           }
           return box;
         }),

@@ -23,9 +23,80 @@ export async function registerContributions(
   db: Db,
   verify: (id: string) => Promise<Verification>,
 ) {
+  app.post('/api/contributions/approval', { bodyLimit: 4096 }, async (request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    const input = z.object({ submissionId: z.uuid() }).strict().parse(request.body);
+    const token = /^Bearer ((?:tgr|tgs)_[A-Za-z0-9_-]{43})$/.exec(
+      String(request.headers.authorization ?? ''),
+    )?.[1];
+    if (!token) return reply.code(401).send({ error: 'Anmeldung erforderlich.' });
+    let account;
+    if (token.startsWith('tgs_')) {
+      const session = (
+        await db.query('SELECT key_id,expires_at FROM login_sessions WHERE token_hash=$1', [
+          keyHash(token),
+        ])
+      ).rows[0];
+      if (!session || new Date(session.expires_at).getTime() <= Date.now())
+        return reply.code(401).send({ error: 'Anmeldung abgelaufen.' });
+      account = (
+        await db.query('SELECT id,revoked_at FROM contribution_keys WHERE id=$1', [session.key_id])
+      ).rows[0];
+    } else
+      account = (
+        await db.query('SELECT id,revoked_at FROM contribution_keys WHERE key_hash=$1', [
+          keyHash(token),
+        ])
+      ).rows[0];
+    if (!account || account.revoked_at) return reply.code(401).send({ error: 'Zugang gesperrt.' });
+    const flags = (
+      await db.query(
+        "SELECT name FROM system_flags WHERE enabled=true AND name IN ('attack_mode','publication_paused')",
+      )
+    ).rows;
+    if (flags.length) return { approved: false, reason: 'publication_paused' };
+    const submission = (
+      await db.query(
+        'SELECT status,candidate_id,video_id,body,review_provenance FROM contributions WHERE id=$1 AND key_id=$2',
+        [input.submissionId, account.id],
+      )
+    ).rows[0];
+    if (!submission || submission.status !== 'adopted' || !submission.review_provenance)
+      return { approved: false, reason: 'review_pending' };
+    const row = (
+      await db.query(
+        "SELECT video_id,body,analysis,checked_at FROM candidates WHERE id=$1 AND status='published'",
+        [submission.candidate_id],
+      )
+    ).rows[0];
+    if (!row?.checked_at || new Date(row.checked_at).getTime() + 7200000 <= Date.now())
+      return { approved: false, reason: 'not_published_or_expired' };
+    const candidate = candidateSchema.safeParse(row.body),
+      analysis = analysisSchema.safeParse(row.analysis);
+    if (
+      !candidate.success ||
+      !analysis.success ||
+      row.video_id !== submission.video_id ||
+      candidate.data.target?.type === 'comment' ||
+      candidate.data.evidence.quote !== submission.body.evidence.quote ||
+      publicationIssues(candidate.data, analysis.data).length
+    )
+      return { approved: false, reason: 'content_changed' };
+    return {
+      approved: true,
+      submissionId: input.submissionId,
+      videoId: row.video_id,
+      evidenceQuote: candidate.data.evidence.quote,
+      questions: analysis.data.questions,
+      reviewDigest: digest({ body: candidate.data, analysis: analysis.data }),
+      expiresAt: new Date(
+        Math.min(Date.now() + 30000, new Date(row.checked_at).getTime() + 7200000),
+      ).toISOString(),
+    };
+  });
   app.post('/api/contributions', { bodyLimit: 256 * 1024 }, async (request, reply) => {
     reply.header('Cache-Control', 'no-store');
-    const bearer = /^Bearer (tgr_[A-Za-z0-9_-]{43})$/.exec(
+    const bearer = /^Bearer ((?:tgr|tgs)_[A-Za-z0-9_-]{43})$/.exec(
       String(request.headers.authorization ?? ''),
     );
     if (!bearer)
@@ -37,11 +108,29 @@ export async function registerContributions(
         await connection.query(commit ? 'COMMIT' : 'ROLLBACK');
         return reply.code(code).send(body);
       };
-      // Lock the key: quota, retries and revocation serialize across API replicas.
+      // A Google sign-in session maps to the same persistent account/quota on every device.
+      const session = bearer[1].startsWith('tgs_')
+        ? (
+            await connection.query(
+              'SELECT key_id,expires_at FROM login_sessions WHERE token_hash=$1 FOR UPDATE',
+              [keyHash(bearer[1])],
+            )
+          ).rows[0]
+        : undefined;
+      if (
+        bearer[1].startsWith('tgs_') &&
+        (!session || new Date(session.expires_at).getTime() <= Date.now())
+      )
+        return await done(401, {
+          error: 'Anmeldung abgelaufen. Bitte erneut mit Google verbinden.',
+        });
+      // Lock the account: quota, retries and revocation serialize across sessions/API replicas.
       const key = (
         await connection.query(
-          'SELECT id,revoked_at FROM contribution_keys WHERE key_hash=$1 FOR UPDATE',
-          [keyHash(bearer[1])],
+          session
+            ? 'SELECT id,revoked_at FROM contribution_keys WHERE id=$1 FOR UPDATE'
+            : 'SELECT id,revoked_at FROM contribution_keys WHERE key_hash=$1 FOR UPDATE',
+          [session ? session.key_id : keyHash(bearer[1])],
         )
       ).rows[0];
       if (!key || key.revoked_at)
@@ -104,10 +193,18 @@ export async function registerContributions(
   app.get('/internal/contributions', async () => ({
     contributions: (
       await db.query(
-        'SELECT id,video_id,status,body,review_note,created_at FROM contributions ORDER BY created_at DESC LIMIT 100',
+        'SELECT id,video_id,status,body,review_note,ai_reason,ai_checked_at,review_provenance,created_at FROM contributions ORDER BY created_at DESC LIMIT 100',
       )
     ).rows,
   }));
+  app.post('/internal/contributions/retry', async (request, reply) => {
+    const { id } = z.object({ id: z.uuid() }).strict().parse(request.body);
+    const updated = await db.query(
+      "UPDATE contributions SET ai_checked_at=NULL,ai_reason=NULL WHERE id=$1 AND status='review' RETURNING id",
+      [id],
+    );
+    return reply.code(updated.rows.length ? 200 : 409).send({ queued: !!updated.rows.length });
+  });
   app.post('/internal/contributions/reject', async (request, reply) => {
     const { id, note } = z
       .object({ id: z.uuid(), note: z.string().trim().min(1).max(1000) })
@@ -205,8 +302,16 @@ export async function registerContributions(
           .send({ error: 'Beitrag existiert bereits. Bestehender Inhalt bleibt erhalten.' });
       }
       await connection.query(
-        "UPDATE contributions SET status='adopted',candidate_id=$1,review_note='Redaktionell geprüft und als Entwurf übernommen' WHERE id=$2",
-        [id, input.id],
+        "UPDATE contributions SET status='adopted',candidate_id=$1,review_note='Redaktionell geprüft und als Entwurf übernommen',review_provenance=$3 WHERE id=$2",
+        [
+          id,
+          input.id,
+          {
+            kind: 'editorial',
+            submissionDigest: digest(original),
+            reviewedAt: new Date().toISOString(),
+          },
+        ],
       );
       await connection.query('COMMIT');
       return { adopted: true, candidateId: id, published: false };

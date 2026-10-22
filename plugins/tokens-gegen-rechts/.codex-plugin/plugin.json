@@ -1,6 +1,6 @@
 {
   "name": "tokens-gegen-rechts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Recherchiere YouTube-Aussagen mit deinem eigenen Codex und erstelle belegte Nachfragen. Eingeladener Pilot.",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",

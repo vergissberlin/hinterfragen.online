@@ -47,6 +47,8 @@ export async function maintenance(
   await db.query("DELETE FROM candidates WHERE source_updated_at < now() - interval '30 days'");
   await db.query("DELETE FROM contributions WHERE created_at < now() - interval '30 days'");
   await db.query('DELETE FROM contribution_daily_quota WHERE day < current_date - 30');
+  await db.query('DELETE FROM login_flows WHERE expires_at < now()');
+  await db.query('DELETE FROM login_sessions WHERE expires_at < now()');
   await cleanAvatars(config.DATA_DIR);
   await exportCatalog(db, config);
   return { checked: rows.length, failures };

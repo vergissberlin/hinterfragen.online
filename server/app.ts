@@ -16,7 +16,9 @@ import {
 import { digest, loadCalibration, publicationIssues } from './policy.ts';
 import { checkSource, type Verification } from './youtube.ts';
 import { exportCatalog } from './catalog.ts';
+import { registerContributionReview } from './contribution-review.ts';
 import { registerContributions } from './contributions.ts';
+import { registerGoogleLogin, type GoogleVerifier } from './google-login.ts';
 const discoverySchema = z
   .object({
     videos: z
@@ -38,6 +40,7 @@ export async function buildApp(
   config: Config,
   verifyVideo: (id: string, target?: PostTarget) => Promise<Verification> = (id, target) =>
     checkSource(id, target, config.YOUTUBE_API_KEY),
+  verifyGoogle?: GoogleVerifier,
 ) {
   const app = Fastify({ bodyLimit: 512000, logger: false, trustProxy: false });
   await app.register(rateLimit, {
@@ -72,6 +75,8 @@ export async function buildApp(
         '/internal/discover',
         '/internal/agent-batch',
         '/internal/import',
+        '/internal/contributions/review-batch',
+        '/internal/contributions/review-result',
       ].includes(path);
       if (!authorized(request, 'admin') && !(agentAllowed && authorized(request, 'agent')))
         return reply.code(401).send({ error: 'Nicht autorisiert.' });
@@ -389,6 +394,8 @@ export async function buildApp(
     return { withdrawn: true };
   });
   app.post('/internal/export', async () => ({ posts: await exportCatalog(db, config) }));
+  await registerGoogleLogin(app, db, config, verifyGoogle);
   await registerContributions(app, db, (id) => verifyVideo(id));
+  await registerContributionReview(app, db, config, (id) => verifyVideo(id));
   return app;
 }

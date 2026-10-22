@@ -34,8 +34,36 @@ if (process.argv[2] === '--reset-settings') {
     'Schlüssel lokal hinterlegt. Bestehende Schlüsseldateien werden nicht überschrieben.',
   );
 } else {
-  const server = new McpServer({ name: 'tokens-gegen-rechts', version: '0.1.0' });
+  const server = new McpServer({ name: 'tokens-gegen-rechts', version: '0.2.0' });
   const tools = [
+    [
+      'tgr_get_approval',
+      'Liest zentral bestätigte Fragen für die eigene Einreichung. Unbestätigt oder nicht erreichbar bedeutet keine Veröffentlichung.',
+      z.object({ runId: z.uuid(), submissionId: z.uuid() }).strict(),
+      (input: unknown) => service.getApproval(input),
+      true,
+    ],
+    [
+      'tgr_connect',
+      'Verbindet hinterfragen.online nach Nutzerauftrag mit Google im normalen Browser. Keine YouTube- oder Social-Media-Veröffentlichungserlaubnis.',
+      z.object({}).strict(),
+      () => service.connect(),
+      false,
+    ],
+    [
+      'tgr_get_auth_status',
+      'Zeigt lokalen Anmeldestatus ohne Sitzungstokens; keine serverseitige Zugangsprüfung.',
+      z.object({}).strict(),
+      () => service.authStatus(),
+      true,
+    ],
+    [
+      'tgr_disconnect',
+      'Meldet diese Plugin-Installation ab und widerruft ihre Anwendungssitzung. Lokale Recherche und Optionen bleiben erhalten.',
+      z.object({}).strict(),
+      () => service.disconnect(),
+      false,
+    ],
     [
       'tgr_get_settings',
       'Liest persönliche Optionen. Gibt keine Zugangsdaten aus.',
@@ -135,7 +163,13 @@ if (process.argv[2] === '--reset-settings') {
           readOnlyHint: readOnly,
           destructiveHint: false,
           idempotentHint: readOnly,
-          openWorldHint: name === 'tgr_submit_research',
+          openWorldHint: [
+            'tgr_submit_research',
+            'tgr_connect',
+            'tgr_disconnect',
+            'tgr_get_approval',
+            'tgr_begin_publication',
+          ].includes(name),
         },
       },
       async (input: unknown) => {

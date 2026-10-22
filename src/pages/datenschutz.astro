@@ -55,7 +55,9 @@ const email = import.meta.env.PUBLIC_OPERATOR_EMAIL;
         . Im Codex-Pilot recherchieren Teilnehmende über ihren eigenen Codex-Zugang. Für die
         Verarbeitung dort gelten die Einstellungen und Bedingungen ihres Anbieters. Die
         Plugin-Werkzeuge rufen selbst keine Modell-API auf. Der frühere zentrale Analyse-Workflow
-        ist ausschließlich manuell startbar.
+        ist ausschließlich manuell startbar. Eine separate Qualitätsprüfung kann auf einem
+        GitHub-Runner mit lokalem Modell erfolgen; dabei gelten auch die Verarbeitungsbedingungen
+        des konfigurierten GitHub-Betriebs.
       </p>
       <p>
         Beim ausgewählten Beitrag oder Kommentar zeigen wir Name und Profilbild des jeweiligen
@@ -73,18 +75,33 @@ const email = import.meta.env.PUBLIC_OPERATOR_EMAIL;
         eingereicht.
       </p>
       <p>
-        Einreichungen werden einem persönlichen Pilot-Schlüssel zugeordnet und spätestens nach 30
-        Tagen gelöscht. Für Zugang und Begrenzung speichern wir einen Schlüssel-Hash, ein
-        Pilot-Label, Widerrufsstatus und Tageszähler; das Label soll keine Klarnamen enthalten.
-        Zugangsschlüssel werden nicht im Klartext in der Datenbank gespeichert. Eine redaktionell
-        übernommene Fassung unterliegt anschließend den Aufbewahrungsregeln des Katalogs. Abschalten
-        der Einreichung löscht bereits übertragene Daten nicht rückwirkend.
+        Einreichungen werden einem persönlichen Pilot-Konto zugeordnet und spätestens nach 30 Tagen
+        gelöscht. Für Zugang und Begrenzung speichern wir einen Schlüssel-Hash, ein Pilot-Label,
+        Widerrufsstatus und Tageszähler; das Label soll keine Klarnamen enthalten. Zugangsschlüssel
+        werden nicht im Klartext in der Datenbank gespeichert. Eine redaktionell übernommene Fassung
+        unterliegt anschließend den Aufbewahrungsregeln des Katalogs. Abschalten der Einreichung
+        löscht bereits übertragene Daten nicht rückwirkend.
       </p>
       <p>
         Lokale Versandversuche bleiben zur Vermeidung doppelter Kommentare gespeichert,
         einschließlich Video-ID, eigener Kanal-ID, Zeitpunkt, Text-Hash und beobachtetem Status. Das
         Plugin überträgt diese Historie nicht an uns. Browsergesteuerte Veröffentlichungen erfolgen
         im persönlich angemeldeten Konto.
+      </p>
+      <h2>Google-Anmeldung bei der Anwendung</h2>
+      <p>
+        Der Browser öffnet Google nur beim beauftragten Verbinden. Angefragt werden OpenID und die
+        verifizierte E-Mail-Adresse; diese wird für die Pilot-Allowlist geprüft. Die Anwendung
+        speichert die stabile Google-Kennung zur Kontozuordnung, keine Google-Zugangs- oder
+        Refresh-Tokens. Anwendungssitzungen werden serverseitig gehasht, lokal in einer privaten
+        Datei gespeichert und nach 30 Tagen ungültig. Anmeldung ist keine Erlaubnis zum
+        Veröffentlichen auf Social Media. Abmelden widerruft die eigene Sitzung; Kontolöschung beim
+        Betreiber anfragen.
+      </p>
+      <p>
+        Die Freigabeprüfung überträgt die ID einer bereits eingereichten eigenen Recherche, um
+        aktuell bestätigte Fragen abzurufen. Lokale Versandhistorie und Social-Media-Anmeldedaten
+        werden dabei nicht eingereicht.
       </p>
       <h2>Optionale YouTube-Verbindung</h2>
       <p>

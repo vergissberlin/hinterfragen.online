@@ -33,7 +33,7 @@ GitHub-CI wurde anschließend im Merge-PR gestartet. Für den Remote-Status sind
 - Externen Browser-Agenten mit WebMCP prüfen; die native technische Schnittstelle ist bereits getestet, allgemeine Browserunterstützung wird nicht behauptet.
 - Physischer Testausdruck und Scan, externes Backup mit Wiederherstellungstest, externe Alarmierung für Ausfälle und leeren Katalog.
 
-Profile, Portal-OAuth, öffentliche Bestenliste und nicht-sachliche Tonalitäten bleiben wie vereinbart Phase 2. Der vorbereitete Datenvertrag allein ist keine implementierte Profilfunktion.
+Profile, öffentliche Bestenliste und nicht-sachliche Tonalitäten bleiben wie vereinbart Phase 2. Die spätere Pilot-Erweiterung ergänzt eine begrenzte Google-Anwendungsanmeldung. Der vorbereitete Datenvertrag allein ist keine implementierte Profilfunktion.
 
 ## Codex-Pilot · 22.10.2026
 
@@ -46,3 +46,14 @@ Profile, Portal-OAuth, öffentliche Bestenliste und nicht-sachliche Tonalitäten
 - Alle drei Skill-Frontmatter mit dem skill-creator-Validator geprüft. Zentraler Analyse-Cron entfernt.
 
 Noch offen: Desktop-Installation/Update unter zweitem persönlichem Nutzerkonto, reale Recherche mit dessen Kontingent und Veröffentlichung auf ausdrücklich vorgesehenem Testvideo. Automatisierte Browserfälle simulieren externe YouTube-Antworten und beweisen keine reale Veröffentlichung oder zuverlässige semantische Einordnung durch einen Agenten. [Pilot-Abnahmeliste](codex-plugin.md).
+
+## Google-Anmeldung und zentrale Bestätigung · 22.10.2026
+
+- 84 Unit-/Integrationstests mit echtem isoliertem PostgreSQL 17 erfolgreich; darunter State/PKCE/Nonce/Replay, verifizierte Pilotkonten, stabile Quota bei erneuter Anmeldung, Widerruf/Ablauf und verspätete Tokenantwort nach Abmeldung.
+- Freigabe für eigene Einreichungen: offen, redaktioneller Entwurf, bestätigte Veröffentlichung, redaktionell geänderter Fragetext, Rücknahme, Ablauf, Betriebsflags und Serverausfall getestet. Ohne frische zentrale Bestätigung keine lokale Versandreservierung.
+- Unabhängige Prüfrouten testen Quellen-/Kalibrierungspflicht, Rollen und erfolgreiche Bestätigung mit Testdaten. Autoritative Transkriptquellen benötigen Videozuordnung, exaktes Zitat und passende Zeitmarke; fehlende Quelle, Redirects und Übergröße bleiben gesperrt.
+- Alle 21 vorhandenen Playwright-Fälle, Astro/TypeScript ohne Diagnosen, Website-Build, eigenständiger MCP-Runtime-Build und alle drei Skill-Validatoren erfolgreich. Druckprüfung: acht QR-Codes und A4/A3/A2-Maße bestätigt.
+- Backend- und Web-Dockerimages gebaut. Die Installationsschritte verwenden die Lockdatei ohne zusätzliche npm-Audit-Netzabfrage; diese hing im Testlauf. Das ist kein bestandener neuer Vulnerability-Audit.
+- Keine echte Google-Autorisierung, reale Modellkalibrierung, Kommentarveröffentlichung oder Installation auf einem zweiten Desktop-Konto durchgeführt. Tests verwenden kontrollierte externe Antworten und ersetzen diese Abnahme nicht.
+
+Einrichtung und noch erforderliche Live-Schritte: [Google und unabhängige Prüfung](auth-review.md). Die Prüf-Action ist standardmäßig deaktiviert; ohne freigegebene Originalquelle und bestandene reale Kalibrierung bestätigt sie nichts automatisch. Recherche bleibt beim persönlichen Codex-Kontingent, kein Betreiber-Modell-API-Schlüssel wird benötigt.

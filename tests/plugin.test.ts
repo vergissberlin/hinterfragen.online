@@ -7,10 +7,33 @@ import { research } from './plugin-fixtures.ts';
 let dir: string, service: LocalService, now: number;
 const channelId = 'UC' + 'a'.repeat(22);
 const transport = vi.fn<typeof fetch>();
+const approved = new Map<string, ReturnType<typeof research>>();
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'tgr-local-'));
   now = Date.now();
   transport.mockReset();
+  approved.clear();
+  transport.mockImplementation(async (url, options) => {
+    if (!String(url).endsWith('/api/contributions/approval'))
+      throw new Error('Unexpected endpoint');
+    const id = JSON.parse(String(options?.body)).submissionId;
+    const result = approved.get(id);
+    return new Response(
+      JSON.stringify(
+        result
+          ? {
+              approved: true,
+              submissionId: id,
+              videoId: result.videoId,
+              evidenceQuote: result.evidence.quote,
+              questions: result.analysis.questions,
+              expiresAt: new Date(now + 30000).toISOString(),
+              reviewDigest: 'a'.repeat(64),
+            }
+          : { approved: false, reason: 'review_pending' },
+      ),
+    );
+  });
   service = new LocalService(dir, transport, () => now);
 });
 afterEach(async () => {
@@ -29,6 +52,8 @@ async function setup(
     autonomousAuthorized,
   });
   const result = research();
+  approved.set(result.submissionId, result);
+  await writeFile(join(dir, 'submission-key'), 'tgr_' + 'a'.repeat(43), { mode: 0o600 });
   await service.recordResearch({ runId: run.runId, research: result });
   return { runId: run.runId, submissionId: result.submissionId, result };
 }
@@ -118,6 +143,7 @@ describe('Persönliche Optionen und Recherche', () => {
   it('stoppt bei beschädigten oder unsicheren Dateien und erhält Versandhistorie beim Reset', async () => {
     const run = await setup();
     await service.beginAttempt(attempt(run));
+    transport.mockClear();
     await writeFile(join(dir, 'settings.json'), '{broken');
     await expect(
       service.submit({ runId: run.runId, submissionId: run.submissionId }),
@@ -150,6 +176,30 @@ describe('Persönliche Optionen und Recherche', () => {
   });
 });
 describe('Dauerhafte Veröffentlichungsvorbereitung ohne Browseraktion', () => {
+  it('blockiert ungeprüfte Inhalte, geänderte Texte und Ausfälle der zentralen Freigabe', async () => {
+    const run = await setup();
+    approved.clear();
+    await expect(service.beginAttempt(attempt(run))).rejects.toThrow('nicht bestätigt');
+    approved.set(run.submissionId, run.result);
+    await expect(service.beginAttempt(attempt(run, { text: 'Ein anderer Text?' }))).rejects.toThrow(
+      'nicht bestätigt',
+    );
+    transport.mockRejectedValue(new Error('offline'));
+    await expect(service.beginAttempt(attempt(run))).rejects.toThrow('nicht erreichbar');
+    expect((await service.status()).attempts).toHaveLength(0);
+  });
+  it('zeigt redaktionell geänderte Fragen und akzeptiert nur den neu freigegebenen Text', async () => {
+    const run = await setup();
+    const corrected = structuredClone(run.result);
+    corrected.analysis.questions[0] = 'Woher weißt du das?';
+    approved.set(run.submissionId, corrected);
+    expect(
+      await service.getApproval({ runId: run.runId, submissionId: run.submissionId }),
+    ).toMatchObject({ approved: true, questions: corrected.analysis.questions });
+    expect(
+      await service.beginAttempt(attempt(run, { text: corrected.analysis.questions[0] })),
+    ).toMatchObject({ reserved: true });
+  });
   it('blockiert Entwurfsmodus und fehlende konkrete Freigabe', async () => {
     const run = await setup('draft');
     await expect(service.beginAttempt(attempt(run))).rejects.toThrow('deaktiviert');
@@ -166,7 +216,9 @@ describe('Dauerhafte Veröffentlichungsvorbereitung ohne Browseraktion', () => {
       reserved: true,
       status: 'unknown',
     });
-    expect(transport).not.toHaveBeenCalled();
+    expect(
+      transport.mock.calls.every(([url]) => String(url).endsWith('/api/contributions/approval')),
+    ).toBe(true);
   });
   it('blockiert fehlenden Browser, Kontoänderung und geschlossene Kommentare', async () => {
     const run = await setup('approve', false);
